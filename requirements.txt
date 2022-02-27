@@ -1,0 +1,3 @@
+coincurve
+pysha3
+web3
