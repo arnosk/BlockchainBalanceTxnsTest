@@ -33,8 +33,7 @@ urlEthBalance = config.ETHERSCAN_URL + \
                 '?module=account&action=balance&address=' + \
                 ethAddress + '&tag=latest&apikey=' + \
                 config.ETHERSCAN_API 
-#print(urlEthBalance)
-response = requests.request("GET", urlEthBalance)
+response = requests.get(urlEthBalance)
 resp = response.json()
 ethBalance = int(resp['result']) / 10**18
 print('Balance: %s ETH'%(ethBalance))
@@ -48,11 +47,12 @@ urlEthTxlist =  config.ETHERSCAN_URL + \
                 '?module=account&action=txlist&address=' + \
                 ethAddress + '&startblock=0&endblock=latest&sort=asc&apikey=' + \
                 config.ETHERSCAN_API
-response = requests.request("GET", urlEthTxlist)
+response = requests.get(urlEthTxlist)
 resp = response.json()
-print('number of tx: ', len(resp['result']))
-#print(resp)
-for i in resp['result']:
+res = resp['result']
+print(type(res))
+print('number of tx: ', len(res))
+for i in res:
     txBlock = i['blockNumber']
     txTime = datetime.fromtimestamp(int(i['timeStamp']), tz=timezone.utc)
     txHash = i['hash']
@@ -95,11 +95,13 @@ urlEthTxlistInt =  config.ETHERSCAN_URL + \
                 '?module=account&action=txlistinternal&address=' + \
                 ethAddress + '&startblock=0&endblock=latest&sort=asc&apikey=' + \
                 config.ETHERSCAN_API
-response = requests.request("GET", urlEthTxlistInt)
+response = requests.get(urlEthTxlistInt)
 resp = response.json()
-print('number of tx: ', len(resp['result']))
-#print(resp)
-for i in resp['result']:
+res = resp['result']
+print(type(res), resp)
+print(response.raise_for_status())
+print('number of tx: ', len(res))
+for i in res:
     txBlock  = i['blockNumber']
     txTime = datetime.fromtimestamp(int(i['timeStamp']), tz=timezone.utc)
     txHash = i['hash']
@@ -127,11 +129,12 @@ urlEthTokenTxlist =  config.ETHERSCAN_URL + \
                 '?module=account&action=tokentx&address=' + \
                 ethAddress + '&startblock=0&endblock=latest&sort=asc&apikey=' + \
                 config.ETHERSCAN_API
-response = requests.request("GET", urlEthTokenTxlist)
+response = requests.get(urlEthTokenTxlist)
 resp = response.json()
-print('number of tx: ', len(resp['result']))
-#print(resp)
-for i in resp['result']:
+res = resp['result']
+print(type(res))
+print('number of tx: ', len(res))
+for i in res:
     txBlock  = i['blockNumber']
     txTime = datetime.fromtimestamp(int(i['timeStamp']), tz=timezone.utc)
     txHash = i['hash']
@@ -164,11 +167,12 @@ urlEthTokenNftTxlist =  config.ETHERSCAN_URL + \
                 '?module=account&action=tokennfttx&address=' + \
                 ethAddress + '&startblock=0&endblock=latest&sort=asc&apikey=' + \
                 config.ETHERSCAN_API
-response = requests.request("GET", urlEthTokenNftTxlist)
+response = requests.get(urlEthTokenNftTxlist)
 resp = response.json()
-print('number of tx: ', len(resp['result']))
-#print(resp)
-for i in resp['result']:
+res = resp['result']
+print(type(resp))
+print('number of tx: ', len(res))
+for i in res:
     txBlock  = i['blockNumber']
     txTime = datetime.fromtimestamp(int(i['timeStamp']), tz=timezone.utc)
     txHash = i['hash']
@@ -201,11 +205,12 @@ urlEthMinedBlocklist =  config.ETHERSCAN_URL + \
                 '?module=account&action=getminedblocks&address=' + \
                 ethAddress + '&startblock=0&endblock=latest&sort=asc&apikey=' + \
                 config.ETHERSCAN_API
-response = requests.request("GET", urlEthMinedBlocklist)
+response = requests.get(urlEthMinedBlocklist)
 resp = response.json()
-print('number of tx: ', len(resp['result']))
-#print(resp)
-for i in resp['result']:
+res = resp['result']
+print(type(res))
+print('number of tx: ', len(res))
+for i in res:
     txBlock  = i['blockNumber']
     txTime = datetime.fromtimestamp(int(i['timeStamp']), tz=timezone.utc)
     txBlockReward  = int(i['blockReward']) / 10**18
