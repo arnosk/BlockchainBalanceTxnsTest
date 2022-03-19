@@ -6,6 +6,7 @@ Created on Feb 12, 2022
 from web3 import Web3
 import config
 import asyncio
+import sys
 
 def handle_event(event):
     print(event)
@@ -19,8 +20,7 @@ async def log_loop(event_filter, poll_interval):
 def main():
     w3_eth = Web3(Web3.HTTPProvider(config.ETH_HTTP_PROVIDER))
     if (not w3_eth.isConnected()):
-        print("No ethereum provider, Web3 disconnected")
-        exit()
+        sys.exit("No ethereum provider, Web3 disconnected")
     
     block_filter = w3_eth.eth.filter('latest')
     tx_filter = w3_eth.eth.filter('pending')

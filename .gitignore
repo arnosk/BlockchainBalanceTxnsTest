@@ -1,4 +1,5 @@
 configPrivate.py
+configPublic.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

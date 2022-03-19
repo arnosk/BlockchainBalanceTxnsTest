@@ -3,14 +3,15 @@ Created on Feb 11, 2022
 
 @author: arno
 
-et all transactions of an eth address by fetching all blocks
+Get all transactions of an eth address by fetching all blocks
 through Web3 hhtp provider
 Is very slow
 result is written to json file
 
+same as W3TxnsPerBlockArgs but without args example
 '''
 #!/usr/bin/python
-import argparse
+import sys
 import json
 import config
 
@@ -27,12 +28,10 @@ from hexbytes import HexBytes
 w3_eth = Web3(Web3.HTTPProvider(config.ETH_HTTP_PROVIDER))
 w3_bsc = Web3(Web3.HTTPProvider(config.BSC_HTTP_PROVIDER))
 if (not w3_eth.isConnected()):
-    print("No ethereum provider, Web3 disconnected")
-    exit()
+    sys.exit("No ethereum provider, Web3 disconnected")
 
 if (not w3_bsc.isConnected()):
-    print("No binance smart chain provider, Web3 disconnected")
-    exit()
+    sys.exit("No binance smart chain provider, Web3 disconnected")
 
 w3 = w3_eth
 

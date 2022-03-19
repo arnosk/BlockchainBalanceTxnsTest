@@ -8,12 +8,12 @@ through Web3 hhtp provider
 Is very slow
 result is written to json file
 
-same as TransactionPerBlock but with args example
+same as W3TxnsPerBlock but with args example
 '''
 #!/usr/bin/python
 import argparse
 import json
-import web3
+import sys
 import config
 
 from web3 import Web3
@@ -30,8 +30,7 @@ from hexbytes import HexBytes
 provider = Web3.HTTPProvider(config.ETH_HTTP_PROVIDER)
 w3 = Web3(provider)
 if (not w3.isConnected()):
-    print("No ethereum provider, Web3 disconnected")
-    exit()
+    sys.exit("No ethereum provider, Web3 disconnected")
 
 
 parser = argparse.ArgumentParser()

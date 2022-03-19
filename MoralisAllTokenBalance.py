@@ -3,14 +3,17 @@ Created on Feb 18, 2022
 
 @author: arno
 
-Get all ERC20 tokens of an address with Moralis
+Get all ERC20 tokens and main (ETH or BNB or ...) balance of an address with Moralis
 
 '''
 from web3 import Web3
-import json
 import requests
-import math
 import config
+import sys
+
+# check configuration
+if (config.MORALIS_NODE_KEY=='' or config.MORALIS_API_DEF==''):
+    sys.exit('No Moralis node key or API defined in config file. Aborting')
 
 # add your blockchain connection information
 chain = input("What chain you want to query(eth or bsc or polygon)?: ")

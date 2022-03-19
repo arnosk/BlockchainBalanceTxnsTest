@@ -2,15 +2,17 @@
 Created on Feb 6, 2022
 
 @author: arno
+
+Get balance for an address of a specific token via Web3
 '''
 import config
 from web3 import Web3
+import sys
 #from decimal import Decimal
 
-w3_eth = Web3(Web3.HTTPProvider(config.ETH_HTTP_PROVIDER))
+w3_eth = Web3(Web3.HTTPProvider(config.ETH_HTTP_PROVIDER2))
 if (not w3_eth.isConnected()):
-    print("No ethereum provider, Web3 disconnected")
-    exit()
+    sys.exit("No ethereum provider, Web3 disconnected")
 
 minABI = config.ERC20_ABI
 tokenAddress = '0x7DD9c5Cba05E151C895FDe1CF355C9A1D5DA6429' # GOLEM
@@ -28,5 +30,5 @@ def getTokenBalance(ethAddr, tokenAddr):
 
 getTokenBalance(ethAddress, tokenAddress)
 
-t = w3_eth.getAllERC20()
-print(t)
+#t = w3_eth.getAllERC20()
+#print(t)

@@ -9,17 +9,16 @@ Through a Web3 HTTP provider
 '''
 import config
 from web3 import Web3
+import sys
 #from decimal import Decimal
 
 w3_eth = Web3(Web3.HTTPProvider(config.ETH_HTTP_PROVIDER))
 w3_bsc = Web3(Web3.HTTPProvider(config.BSC_HTTP_PROVIDER))
 if (not w3_eth.isConnected()):
-    print("No ethereum provider, Web3 disconnected")
-    exit()
+    sys.exit("No ethereum provider, Web3 disconnected")
 
 if (not w3_bsc.isConnected()):
-    print("No binance smart chain provider, Web3 disconnected")
-    exit()
+    sys.exit("No binance smart chain provider, Web3 disconnected")
 
 lstAddrEth = config.ETH_ADDRESS
 
