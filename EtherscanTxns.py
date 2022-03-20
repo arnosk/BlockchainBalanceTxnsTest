@@ -5,7 +5,7 @@ Created on Feb 20, 2022
 
 Get all transactions of an eth address with Etherscan.io
  
-1: Normal (Native)ethereum balance
+1: Normal (Native) ethereum balance
 2: Get a list of ‘Normal’ Transactions By Address
 3: Get a list of ‘Internal’ Transactions by Address
 4: Get a list of “ERC20 — Token Transfer Events” by Address
@@ -129,6 +129,7 @@ for i in res:
     txInput = i['input']
     txType = i['type']
     txGas = int(i['gas'])
+    txGasPrice = int(i['gasPrice'])
     txGasUsed = int(i['gasUsed'])
     txTraceId = i['traceId']
     txIsError = i['isError']
