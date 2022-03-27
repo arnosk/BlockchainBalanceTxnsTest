@@ -5,6 +5,9 @@ Created on Feb 18, 2022
 
 Get all ERC20 tokens and main (ETH or BNB or ...) balance of an address with Moralis
 
+1: Normal balance
+2: ERC20 Token balance
+
 '''
 from web3 import Web3
 import requests

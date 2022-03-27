@@ -5,6 +5,13 @@ Created on Feb 18, 2022
 
 Get all transactions of an address with Moralis
 
+1: Normal (Native) ethereum balance
+2: Get a list of ‘Normal’ Transactions By Address
+3: Not done, Get a list of ‘Internal’ Transactions by Address
+4: Get a list of “ERC20 — Token Transfer Events” by Address
+5: Get a list of “ERC721 — Token Transfer Events” by Address
+6: Not done, Get [a] list of Blocks Mined by Address
+
 '''
 from web3 import Web3
 from datetime import datetime, timezone
