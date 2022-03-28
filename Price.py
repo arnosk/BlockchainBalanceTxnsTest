@@ -63,6 +63,16 @@ def convertTimestamp(ts, ms=False):
     dt = datetime.fromtimestamp(ts, tz=timezone.utc)
     return str(dt)
 
+# convert LastUpdated field in dictonary from timestamp to date
+def convertTimestampLastUpdated(resp):
+    key = 'last_updated_at'
+    for v in resp.values():
+        if key in v.keys():
+            ts = v[key]
+            v.update({key:convertTimestamp(ts, False)})
+    return resp
+
+
 # Get coingecko history price
 # one price per day, not suitable for tax in Netherlands on 31-12-20xx 23:00
 # Thumbnail image is available
@@ -108,11 +118,7 @@ def getPrice(coins, currencies, **kwargs):
     resp = getRequestResponse(url)
     
     # convert timestamp to date
-    key = 'last_updated_at'
-    for v in resp.values():
-        if key in v.keys():
-            ts = v[key]
-            v.update({key:convertTimestamp(ts, False)})
+    resp = convertTimestampLastUpdated(resp)
 
     return resp
 
@@ -133,11 +139,7 @@ def getTokenPrice(chain, contracts, currencies, **kwargs):
     resp = getRequestResponse(url)
     
     # convert timestamp to date
-    key = 'last_updated_at'
-    for v in resp.values():
-        if key in v.keys():
-            ts = v[key]
-            v.update({key:convertTimestamp(ts, False)})
+    resp = convertTimestampLastUpdated(resp)
 
     return resp
 
