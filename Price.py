@@ -54,6 +54,15 @@ def api_url_params(url, params, api_url_has_params=False):
         url = url[:-1]
     return url
 
+# convert timestamp to date string
+# ts = timestamp in sec if ms = False
+# ts = timestamp in msec if ms = True
+def convertTimestamp(ts, ms=False):
+    if ms:
+        ts = int(ts/1000)
+    dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+    return str(dt)
+
 # Get coingecko history price
 # one price per day, not suitable for tax in Netherlands on 31-12-20xx 23:00
 # Thumbnail image is available
@@ -61,6 +70,10 @@ def api_url_params(url, params, api_url_has_params=False):
 def getPriceHistory(coins, currencies, date):
     if not isinstance(coins, list):
         coins = [coins]
+
+    # set date in correct format for url call
+    dt = parser.parse(date)
+    date = dt.strftime("%d-%m-%Y")
     
     prices = {}
     for coin in coins:
@@ -94,9 +107,13 @@ def getPrice(coins, currencies, **kwargs):
     url = api_url_params(url, kwargs)
     resp = getRequestResponse(url)
     
-    # convert timestamp
-    # dt = datetime.fromtimestamp( timestamp, tz=timezone.utc )
-    
+    # convert timestamp to date
+    key = 'last_updated_at'
+    for v in resp.values():
+        if key in v.keys():
+            ts = v[key]
+            v.update({key:convertTimestamp(ts, False)})
+
     return resp
 
 # Get coingecko current price of a token
@@ -115,8 +132,12 @@ def getTokenPrice(chain, contracts, currencies, **kwargs):
     url = api_url_params(url, kwargs)
     resp = getRequestResponse(url)
     
-    # convert timestamp
-    # dt = datetime.fromtimestamp( timestamp, tz=timezone.utc )
+    # convert timestamp to date
+    key = 'last_updated_at'
+    for v in resp.values():
+        if key in v.keys():
+            ts = v[key]
+            v.update({key:convertTimestamp(ts, False)})
 
     return resp
 
@@ -143,9 +164,13 @@ def getTokenPriceHistory(chain, contracts, currencies, date):
         url = "https://api.coingecko.com/api/v3/coins/"+chain+"/contract/"+contract+"/market_chart/range"
         url = api_url_params(url, params)
         resp = getRequestResponse(url)
-        # convert timestamp
-        # dt = datetime.fromtimestamp( timestamp, tz=timezone.utc )
-        prices[contract] = resp['prices']
+        price = resp['prices']
+
+        # convert timestamp to date
+        for p in price:
+            p[0] = convertTimestamp(p[0], True)
+        
+        prices[contract] = price
         
     return prices
 
@@ -153,7 +178,7 @@ def getTokenPriceHistory(chain, contracts, currencies, date):
 # Get Coingecko price history
 coins = ["bitcoin","litecoin"]
 curr = ["usd","eur","btc","eth"]
-date = "22-03-2022"
+date = "2022-03-22"
 chain = "binance-smart-chain"
 contracts = ["0x62858686119135cc00C4A3102b436a0eB314D402","0xacfc95585d80ab62f67a14c566c1b7a49fe91167"]
 
@@ -163,7 +188,7 @@ print(price)
 
 print("* History price of coins")
 price = getPriceHistory(coins, curr, date)
-print("%s: %s"%(date,price))
+print("%s: %s"%(date, price))
 
 print("* Current price of token")
 price = getTokenPrice(chain, contracts, curr, include_last_updated_at=True)
