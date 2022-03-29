@@ -22,7 +22,13 @@ the key coins has a list of the search result of coins
   ],
   "exchanges": [] ...
 '''
+import pandas as ps
+import argparse
 from CoingeckoPrice import getRequestResponse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-c', '--coin', type=str, help='Coin name to search on Coingecko', default='BTC')
+#parser.add_argument('-o', '--output', type=str, help="Path to the output JSON file", required=True)
 
 # search coin id from coingecko
 def searchId(searchStr):
@@ -33,9 +39,11 @@ def searchId(searchStr):
     
     
 def __main__():
-    coinSearch = 'btc'
+    args = parser.parse_args()
+    coinSearch = args.coin
     res = searchId(coinSearch)
-    print(res)
+    df = ps.DataFrame(res)
+    print(df)
 
 if __name__=='__main__':
     __main__()

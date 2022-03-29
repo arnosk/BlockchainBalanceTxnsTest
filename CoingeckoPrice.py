@@ -10,6 +10,7 @@ Coingecko
 import requests
 import json
 import sys
+import pandas as ps
 from datetime import datetime, timezone
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -186,19 +187,24 @@ def __main__():
     
     print("* Current price of coins")
     price = getPrice(coins, curr, include_last_updated_at=True)
-    print(price)
+    df = ps.DataFrame(price).transpose()
+    print(df)
     
     print("* History price of coins")
     price = getPriceHistory(coins, curr, date)
-    print("%s: %s"%(date, price))
+    df = ps.DataFrame(price).transpose()
+    print(date) #("%s: %s"%(date, price))
+    print(df)
     
     print("* Current price of token")
     price = getTokenPrice(chain, contracts, curr, include_last_updated_at=True)
-    print(price)
+    df = ps.DataFrame(price).transpose()
+    print(df)
     
     print("* History price of token")
     price = getTokenPriceHistory(chain, contracts, curr[0], date)
-    print(price)
+    df = ps.DataFrame(price).transpose()
+    print(df)
 
 if __name__=='__main__':
     __main__()
