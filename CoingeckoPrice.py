@@ -176,28 +176,29 @@ def getTokenPriceHistory(chain, contracts, currencies, date):
         
     return prices
 
+def __main__():
+    # Get Coingecko price history
+    coins = ["bitcoin","litecoin"]
+    curr = ["usd","eur","btc","eth"]
+    date = "2022-03-22"
+    chain = "binance-smart-chain"
+    contracts = ["0x62858686119135cc00C4A3102b436a0eB314D402","0xacfc95585d80ab62f67a14c566c1b7a49fe91167"]
+    
+    print("* Current price of coins")
+    price = getPrice(coins, curr, include_last_updated_at=True)
+    print(price)
+    
+    print("* History price of coins")
+    price = getPriceHistory(coins, curr, date)
+    print("%s: %s"%(date, price))
+    
+    print("* Current price of token")
+    price = getTokenPrice(chain, contracts, curr, include_last_updated_at=True)
+    print(price)
+    
+    print("* History price of token")
+    price = getTokenPriceHistory(chain, contracts, curr[0], date)
+    print(price)
 
-# Get Coingecko price history
-coins = ["bitcoin","litecoin"]
-curr = ["usd","eur","btc","eth"]
-date = "2022-03-22"
-chain = "binance-smart-chain"
-contracts = ["0x62858686119135cc00C4A3102b436a0eB314D402","0xacfc95585d80ab62f67a14c566c1b7a49fe91167"]
-
-print("* Current price of coins")
-price = getPrice(coins, curr, include_last_updated_at=True)
-print(price)
-
-print("* History price of coins")
-price = getPriceHistory(coins, curr, date)
-print("%s: %s"%(date, price))
-
-print("* Current price of token")
-price = getTokenPrice(chain, contracts, curr, include_last_updated_at=True)
-print(price)
-
-print("* History price of token")
-price = getTokenPriceHistory(chain, contracts, curr[0], date)
-print(price)
-
-
+if __name__=='__main__':
+    __main__()
