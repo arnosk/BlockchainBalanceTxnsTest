@@ -103,46 +103,50 @@ def getMethodContract(methodId, contractAddr):
     return 'No method found'
 
 
-print('Get a list of "Normal" Transactions By Address')
-urlEthTxlist =  config.ETHERSCAN_URL + \
-                '?module=account&action=txlist&address=' + \
-                ethAddress + '&startblock=0&endblock=latest&sort=asc&apikey=' + \
-                config.ETHERSCAN_API
-response = requests.request("GET", urlEthTxlist)
-resp = response.json()
-print('number of tx: ', len(resp['result']))
-#print(resp)
-for i in resp['result']:
-    txBlock = i['blockNumber']
-    txTime = datetime.fromtimestamp(int(i['timeStamp']), tz=timezone.utc)
-    txHash = i['hash']
-    txNonce = i['nonce']
-    txBlockHash = i['blockHash']
-    txTransactionIndex = i['transactionIndex']
-    txFrom = i['from']
-    txTo = i['to']
-    txValue = int(i['value']) / 10**18
-    txGas = int(i['gas'])
-    txGasPrice = int(i['gasPrice'])
-    txGasUsed = int(i['gasUsed'])
-    txIsError = i['isError']
-    txReceipt_status = i['txreceipt_status']
-    txInput = i['input']
-    txContractAddress = i['contractAddress']
-    txGasUsed = int(i['gasUsed'])
-    txCumulativeGasUsed = int(i['cumulativeGasUsed'])
-    txConfirmations = int(i['confirmations'])
-    txFee = txGasPrice * txGasUsed / 10**18
-    txMethodId = txInput[:10]
-    txMethod1 = getMethod4ByteDir(txMethodId)
-    if ethAddress.lower() == txFrom.lower():
-        contractAddr = txTo
-    elif ethAddress.lower() == txTo.lower():
-        contractAddr = txFrom
-    else:
-        contractAddr = txContractAddress
-    txMethod2 = getMethodContract(txMethodId, contractAddr)
+def __main__():
+    print('Get a list of "Normal" Transactions By Address')
+    urlEthTxlist =  config.ETHERSCAN_URL + \
+                    '?module=account&action=txlist&address=' + \
+                    ethAddress + '&startblock=0&endblock=latest&sort=asc&apikey=' + \
+                    config.ETHERSCAN_API
+    response = requests.request("GET", urlEthTxlist)
+    resp = response.json()
+    print('number of tx: ', len(resp['result']))
+    #print(resp)
+    for i in resp['result']:
+        txBlock = i['blockNumber']
+        txTime = datetime.fromtimestamp(int(i['timeStamp']), tz=timezone.utc)
+        txHash = i['hash']
+        txNonce = i['nonce']
+        txBlockHash = i['blockHash']
+        txTransactionIndex = i['transactionIndex']
+        txFrom = i['from']
+        txTo = i['to']
+        txValue = int(i['value']) / 10**18
+        txGas = int(i['gas'])
+        txGasPrice = int(i['gasPrice'])
+        txGasUsed = int(i['gasUsed'])
+        txIsError = i['isError']
+        txReceipt_status = i['txreceipt_status']
+        txInput = i['input']
+        txContractAddress = i['contractAddress']
+        txGasUsed = int(i['gasUsed'])
+        txCumulativeGasUsed = int(i['cumulativeGasUsed'])
+        txConfirmations = int(i['confirmations'])
+        txFee = txGasPrice * txGasUsed / 10**18
+        txMethodId = txInput[:10]
+        txMethod1 = getMethod4ByteDir(txMethodId)
+        if ethAddress.lower() == txFrom.lower():
+            contractAddr = txTo
+        elif ethAddress.lower() == txTo.lower():
+            contractAddr = txFrom
+        else:
+            contractAddr = txContractAddress
+        txMethod2 = getMethodContract(txMethodId, contractAddr)
+    
+        print("From: %s -> To: %s, Contract: %s\n method: %s\n%s\n%s"%
+              (txFrom, txTo, txContractAddress, txMethodId, txMethod1, txMethod2))
+    print()
 
-    print("From: %s -> To: %s, Contract: %s\n method: %s\n%s\n%s"%
-          (txFrom, txTo, txContractAddress, txMethodId, txMethod1, txMethod2))
-print()
+if __name__=='__main__':
+    __main__()

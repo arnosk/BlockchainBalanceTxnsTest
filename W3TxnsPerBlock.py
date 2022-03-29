@@ -25,17 +25,6 @@ from hexbytes import HexBytes
 # address. You can modify it to suit your needs.
 
 
-w3_eth = Web3(Web3.HTTPProvider(config.ETH_HTTP_PROVIDER))
-w3_bsc = Web3(Web3.HTTPProvider(config.BSC_HTTP_PROVIDER))
-if (not w3_eth.isConnected()):
-    sys.exit("No ethereum provider, Web3 disconnected")
-
-if (not w3_bsc.isConnected()):
-    sys.exit("No binance smart chain provider, Web3 disconnected")
-
-w3 = w3_eth
-
-lstAddrEth = config.ETH_ADDRESS
 
 def tx_to_json(tx):
     result = {}
@@ -48,6 +37,16 @@ def tx_to_json(tx):
     return json.dumps(result)
 
 def __main__():
+    w3_eth = Web3(Web3.HTTPProvider(config.ETH_HTTP_PROVIDER))
+    w3_bsc = Web3(Web3.HTTPProvider(config.BSC_HTTP_PROVIDER))
+    if (not w3_eth.isConnected()):
+        sys.exit("No ethereum provider, Web3 disconnected")
+    
+    if (not w3_bsc.isConnected()):
+        sys.exit("No binance smart chain provider, Web3 disconnected")
+    
+    w3 = w3_eth
+    
     start_block = 1
     end_block = w3.eth.blockNumber
 
