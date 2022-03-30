@@ -11,6 +11,7 @@ import requests
 import json
 import sys
 import pandas as ps
+import psycopg2
 from datetime import datetime, timezone
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -179,6 +180,10 @@ def getTokenPriceHistory(chain, contracts, currencies, date):
 
 def __main__():
     # Get Coingecko price history
+    
+    # check if database table coins exists
+    # if yes, read the coingecko ids, if not use default
+    
     coins = ["bitcoin","litecoin"]
     curr = ["usd","eur","btc","eth"]
     date = "2022-03-22"

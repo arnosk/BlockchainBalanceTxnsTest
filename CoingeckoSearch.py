@@ -25,6 +25,7 @@ the key coins has a list of the search result of coins
 import pandas as ps
 import argparse
 from CoingeckoPrice import getRequestResponse
+import psycopg2
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--coin', type=str, help='Coin name to search on Coingecko', default='BTC')
@@ -41,9 +42,19 @@ def searchId(searchStr):
 def __main__():
     args = parser.parse_args()
     coinSearch = args.coin
+    
+    # Check if coin already in database and add to search result on row 0
+    # Do search on coingecko
+    
     res = searchId(coinSearch)
     df = ps.DataFrame(res)
     print(df)
+    
+    # ask user which row is the correct answer
+    # or search another coin or exit
+    
+    # if coin is selected, add to database (replace or add new row in db?)
+    # go back to search question / exit
 
 if __name__=='__main__':
     __main__()

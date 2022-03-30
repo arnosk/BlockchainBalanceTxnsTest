@@ -2,3 +2,5 @@ coincurve
 pysha3
 web3
 datetime
+pandas
+psycopg2
