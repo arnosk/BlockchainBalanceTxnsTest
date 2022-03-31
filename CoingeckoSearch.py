@@ -47,6 +47,7 @@ def __main__():
     # Do search on coingecko
     
     res = searchId(coinSearch)
+    ps.set_option("display.max_colwidth", 20)
     df = ps.DataFrame(res)
     print(df)
     
