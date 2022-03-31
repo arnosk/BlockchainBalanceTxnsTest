@@ -145,11 +145,12 @@ def getTokenPrice(chain, contracts, currencies, **kwargs):
 
     return resp
 
-# Get coingecko history price of a token
-# coins can be a list of strings or a single string
-def getTokenPriceHistory(chain, contracts, currencies, date):
-    if not isinstance(contracts, list):
-        contracts = [contracts]
+# Get coingecko history price of a coin or a token
+# coins_contracts can be a list of strings or a single string
+# If chain = "none" or None search for a coins otherwise search for token contracts
+def getTokenPriceHistory(chain, coins_contracts, currencies, date):
+    if not isinstance(coins_contracts, list):
+        contracts = [coins_contracts]
     if isinstance(currencies, list):
         currencies = currencies[0]
 
@@ -162,10 +163,15 @@ def getTokenPriceHistory(chain, contracts, currencies, date):
     params['vs_currency'] = currencies
     params['from'] = ts
     params['to'] = ts+3600
-   
+
+    if (chain is not None):
+        chain = chain.lower()
     prices = {}
-    for contract in contracts:
-        url = "https://api.coingecko.com/api/v3/coins/"+chain+"/contract/"+contract+"/market_chart/range"
+    for coin_contract in coins_contracts:
+        if (chain=='none' or chain is None): 
+            url = "https://api.coingecko.com/api/v3/coins/"+coin_contract+"/market_chart/range"
+        else:
+            url = "https://api.coingecko.com/api/v3/coins/"+chain+"/contract/"+coin_contract+"/market_chart/range"
         url = api_url_params(url, params)
         resp = getRequestResponse(url)
         price = resp['prices']
@@ -174,14 +180,51 @@ def getTokenPriceHistory(chain, contracts, currencies, date):
         for p in price:
             p[0] = convertTimestamp(p[0], True)
         
-        prices[contract] = price
+        prices[coin_contract] = price
         
     return prices
+
+# Check database existence
+# and table existence
+def checkDB():
+    dbConn = None
+    try:
+        # In PostgreSQL, default username is 'postgres' and password is 'postgres'.
+        # And also there is a default database exist named as 'postgres'.
+        # Default host is 'localhost' or '127.0.0.1'
+        # And default port is '54322'.
+        dbConn = psycopg2.connect("user='postgres' host='localhost' password='postgres' port='5432'")
+        print('Database connected.')
+
+    except:
+        print('Database not connected.')
+    
+    if dbConn is not None:
+        dbConn.autocommit = True
+        cur = dbConn.cursor()
+        cur.execute("SELECT datname FROM pg_database;")
+        list_database = cur.fetchall()
+
+        cur.execute("select * from table")
+
+        
+        database_name = input('Enter database name to check exist or not: ')
+        if (database_name,) in list_database:
+            print("'{}' Database already exist".format(database_name))
+        else:
+            print("'{}' Database not exist.".format(database_name))
+        dbConn.close()
+        print('Done')
+
+    return True
+
 
 def __main__():
     # Get Coingecko price history
     
     # check if database table coins exists
+    checkDB()
+    
     # if yes, read the coingecko ids, if not use default
     
     coins = ["bitcoin","litecoin"]
@@ -194,22 +237,32 @@ def __main__():
     price = getPrice(coins, curr, include_last_updated_at=True)
     df = ps.DataFrame(price).transpose()
     print(df)
-    
+    print()
+
+    print("* History price of token via market_chart")
+    price = getTokenPriceHistory(None, coins, curr[0], date)
+    df = ps.DataFrame(price).transpose()
+    print(df)
+    print()
+   
     print("* History price of coins")
     price = getPriceHistory(coins, curr, date)
     df = ps.DataFrame(price).transpose()
     print(date) #("%s: %s"%(date, price))
     print(df)
+    print()
     
     print("* Current price of token")
     price = getTokenPrice(chain, contracts, curr, include_last_updated_at=True)
     df = ps.DataFrame(price).transpose()
     print(df)
+    print()
     
     print("* History price of token")
     price = getTokenPriceHistory(chain, contracts, curr[0], date)
     df = ps.DataFrame(price).transpose()
     print(df)
+    print()
 
 if __name__=='__main__':
     __main__()
