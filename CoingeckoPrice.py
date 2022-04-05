@@ -11,7 +11,7 @@ import requests
 import json
 import sys
 import pandas as ps
-import psycopg2
+import DbHelper
 from datetime import datetime, timezone
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -184,50 +184,27 @@ def getTokenPriceHistory(chain, coins_contracts, currencies, date):
         
     return prices
 
-# Check database existence
-# and table existence
-def checkDB():
-    dbConn = None
-    try:
-        # In PostgreSQL, default username is 'postgres' and password is 'postgres'.
-        # And also there is a default database exist named as 'postgres'.
-        # Default host is 'localhost' or '127.0.0.1'
-        # And default port is '54322'.
-        dbConn = psycopg2.connect("user='postgres' host='localhost' password='postgres' port='5432'")
-        print('Database connected.')
-
-    except:
-        print('Database not connected.')
-    
-    if dbConn is not None:
-        dbConn.autocommit = True
-        cur = dbConn.cursor()
-        cur.execute("SELECT datname FROM pg_database;")
-        list_database = cur.fetchall()
-
-        cur.execute("select * from table")
-
-        
-        database_name = input('Enter database name to check exist or not: ')
-        if (database_name,) in list_database:
-            print("'{}' Database already exist".format(database_name))
-        else:
-            print("'{}' Database not exist.".format(database_name))
-        dbConn.close()
-        print('Done')
-
-    return True
 
 
 def __main__():
     # Get Coingecko price history
     
-    # check if database table coins exists
-    checkDB()
+    # check if database and table coins exists and has values
+    #config = {'host':'localhost','port':'5432','dbname':'postgresql','user':'postgresql','password':'postgresql','mode':None}
+    #db = DbHelper.DbHelper(config, 'postgresql')
+
+    config = {'dbname':'coingecko.db'}
+    db = DbHelper.DbHelper(config, 'sqlite')
+    
+    dbExist = db.checkDB(table_name = 'coins')
+    print('Database exist: %s'%dbExist)
     
     # if yes, read the coingecko ids, if not use default
-    
-    coins = ["bitcoin","litecoin"]
+    if dbExists:
+        coins = db.query("SELECT coingeckoid FROM coins")
+    else:
+        coins = ["bitcoin","litecoin"]
+        
     curr = ["usd","eur","btc","eth"]
     date = "2022-03-22"
     chain = "binance-smart-chain"
