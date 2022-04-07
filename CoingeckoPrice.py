@@ -12,6 +12,7 @@ import json
 import sys
 import pandas as ps
 import DbHelper
+import config
 from datetime import datetime, timezone
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -190,17 +191,12 @@ def __main__():
     # Get Coingecko price history
     
     # check if database and table coins exists and has values
-    #config = {'host':'localhost','port':'5432','dbname':'postgresql','user':'postgresql','password':'postgresql','mode':None}
-    #db = DbHelper.DbHelper(config, 'postgresql')
-
-    config = {'dbname':'coingecko.db'}
-    db = DbHelper.DbHelper(config, 'sqlite')
-    
+    db = DbHelper.DbHelper(config.DB_CONFIG, config.DB_TYPE)
     dbExist = db.checkDB(table_name = 'coins')
-    print('Database exist: %s'%dbExist)
+    print('Database and table coins exist: %s'%dbExist)
     
     # if yes, read the coingecko ids, if not use default
-    if dbExists:
+    if dbExist:
         coins = db.query("SELECT coingeckoid FROM coins")
     else:
         coins = ["bitcoin","litecoin"]

@@ -1,3 +1,14 @@
+# Database setup
+# setup for postgresql
+#DB_TYPE = 'postgresql'
+#DB_CONFIG = {'host':'localhost','port':'5432','dbname':'Arkofolio','user':'postgresql','password':'postgresql','mode':None}
+# setup for sqlite3
+DB_TYPE = 'sqlite'
+DB_CONFIG = {'dbname':'Arkofolio.db'}
+
+
+
+# ethereum addresses
 ETH_ADDRESS = ['0x2c1ba59d6f58433fb1eaee7d20b26ed83bda51a3', # internal tx
                '0x4e83362442b8d1bec281594cea3050c8eb01311c', # token
                '0x6975be450864c02b4613023c2152ee0743572325', # NFT
