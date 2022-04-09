@@ -27,13 +27,10 @@ import argparse
 import sys
 from CoingeckoPrice import getRequestResponse
 import DbHelper
+from DbHelper import DbType
 import config
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-c', '--coin', type=str, help='Coin name to search on Coingecko')
-#parser.add_argument('-c', '--coin', type=str, help='Coin name to search on Coingecko', default='BTC')
-#parser.add_argument('-o', '--output', type=str, help="Path to the output JSON file", required=True)
 
 # search coin id from coingecko
 def searchId(searchStr):
@@ -65,34 +62,39 @@ def inputNumber(message: str, min: int = 1, max: int = 1):
         return userInput 
         break
 
+# Insert new row into coins table
+def insertCoin(db, params):
+    query = "INSERT INTO coins (coingeckoid, name, symbol) " \
+            "VALUES(?,?,?)"
+    args = (params['id'], params['name'], params['symbol'])
+    print(type(args))
+    db.execute(query, args)
+    db.commit()
+    
 
 def search(db, coinSearch):
-    # Check if coin already in database and add to search result on row 0
-    dbExist = db.checkDB(table_name = 'coins')
-    print('Database and table coins exist: %s'%dbExist)
+    ps.set_option("display.max_colwidth", 20)
 
+    # Check if coin already in database and add to search result on row 0
     dbResult = []
-    if dbExist:
-        dbResult = db.query("SELECT * FROM coins WHERE coin='%s'"%(coinSearch))
+    if db.checkTable['coins']:
+        coinSearchStr = "%{}%".format(coinSearch)
+        dbResult = db.query("SELECT * FROM coins WHERE coingeckoid like ? or name like ? or symbol like ?", \
+                            (coinSearchStr, coinSearchStr, coinSearchStr))
+        if (len(dbResult) > 0):
+            dbResultdf = ps.DataFrame(dbResult)
+            print("Search in database:")
+            print(dbResultdf)
 
     # Do search on coingecko
     cgResult = searchId(coinSearch)
-    cgResultSize = len(cgResult)
-    dbResultSize = len(dbResult)
-    
-    ps.set_option("display.max_colwidth", 20)
-    if (dbResultSize > 0):
-        dbResultdf = ps.DataFrame(dbResult)
-        print("Search in database:")
-        print(dbResultdf)
     cgResultdf = ps.DataFrame(cgResult)
     print("Search from coingecko:")
     print(cgResultdf)
     
     # ask user which row is the correct answer
     userInput = inputNumber("Select correct coin to store in database, or (N)ew search, or (Q)uit: ",
-                            0, cgResultSize-1)
-    
+                            0, len(cgResult)-1)
 
     # if coin is selected, add to database (replace or add new row in db?)
     # go back to search question / exit
@@ -103,17 +105,46 @@ def search(db, coinSearch):
     else:
         # coin selected add to
         print("Number chosen = %s"%userInput)
-        row = cgResult[userInput]
-        print(row)
-        # adding selected coin to database
-        # don't add row in is already in dbResult
+        coin = cgResult[userInput]
+        print(coin)
 
+        # check if database exist, in case of sqlite create database
+        if not db.hasConnection():
+            if db.getDbType() == DbType.sqlite:
+                db.open()
+            else:
+                print("No database %s, do new search"%db.getDbType())
+
+        # check if coingecko id is already in our database
+        if db.hasConnection():
+            # if table doesn't exist, create table coins
+            if not db.checkTable['coins']:
+                db.createTable("coins")
+                db.checkTable['coins'] = True
+            
+            dbResult = db.query("SELECT * FROM coins WHERE coingeckoid='%s'"%(coin['id']))
+            if len(dbResult):
+                print("Database already has a row with the coin %s"%(coin['id']))
+            else:
+                # add new row to table coins
+                insertCoin(db, coin)
+                
 
 
 def __main__():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--coin', type=str, help='Coin name to search on Coingecko')
+    #parser.add_argument('-c', '--coin', type=str, help='Coin name to search on Coingecko', default='BTC')
+    #parser.add_argument('-o', '--output', type=str, help='Path to the output JSON file', required=True)
     args = parser.parse_args()
     coinSearch = args.coin
-    db = DbHelper.DbHelper(config.DB_CONFIG, config.DB_TYPE)
+    
+    db = DbHelper.DbHelperArko(config.DB_CONFIG, config.DB_TYPE)
+    dbExist = db.checkDb()
+    print("Database exists:", dbExist)
+    print("Database exists:", db.hasConnection())
+    dbTableExist = db.checkDb(table_name = 'coins')
+    print("Table coins exist:", dbTableExist)
 
     while True:
         if coinSearch == None:

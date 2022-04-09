@@ -192,17 +192,18 @@ def __main__():
     
     # check if database and table coins exists and has values
     db = DbHelper.DbHelper(config.DB_CONFIG, config.DB_TYPE)
-    dbExist = db.checkDB(table_name = 'coins')
+    dbExist = db.checkDb(table_name = 'coins')
     print('Database and table coins exist: %s'%dbExist)
     
     # if yes, read the coingecko ids, if not use default
     if dbExist:
         coins = db.query("SELECT coingeckoid FROM coins")
+        coins = [i[0] for i in coins]
     else:
         coins = ["bitcoin","litecoin"]
         
     curr = ["usd","eur","btc","eth"]
-    date = "2022-03-22"
+    date = "2022-04-01"
     chain = "binance-smart-chain"
     contracts = ["0x62858686119135cc00C4A3102b436a0eB314D402","0xacfc95585d80ab62f67a14c566c1b7a49fe91167"]
     

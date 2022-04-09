@@ -37,11 +37,12 @@ class DbHelper():
         ...
         db.close()
 
-   '''
+    '''
 
     def __init__(self, config:dict, db_type:str):
         self.conn = None
         self.config = config
+        self.checkTable = {}
         db_type = db_type.lower()
         if DbType.hasMember(db_type):
             self.db_type = DbType[db_type]
@@ -61,15 +62,17 @@ class DbHelper():
             self.conn.close()
             self.conn = None
 
-    def open(self, create = False):
+    def open(self, create = True):
         if not self.conn:
             if self.db_type == DbType.sqlite:
                 import sqlite3
                 dbname = self.config['dbname']
                 if create:
                     self.conn = sqlite3.connect(dbname)
+                    print('Open sqlite3: Database connected')
                 else:
                     self.conn = sqlite3.connect('file:%s?mode=rw'%dbname, uri=True)
+                    print('Open sqlite3: Database not connected.')
                 
                 
             elif self.db_type == DbType.postgresql:
@@ -91,9 +94,9 @@ class DbHelper():
                         user = user,
                         password = password
                     )
-                    print('Open: Database connected')
+                    print('Open postgresql: Database connected')
                 except Exception as e:
-                    print('Open: Database not connected.')
+                    print('Open postgresql: Database not connected.')
                     print(e)
                     raise ValueError(e)
         else:
@@ -101,7 +104,7 @@ class DbHelper():
 
     # Check database existence
     # and if set check table existence
-    def checkDB(self, table_name: str = None):
+    def checkDb(self, table_name: str = None):
         check = False
 
         # check existance of database
@@ -115,24 +118,27 @@ class DbHelper():
         if self.conn is not None:
             if table_name is not None:
                 if self.db_type == DbType.sqlite:
-                    queryCheckTable = "SELECT count(name) FROM sqlite_master WHERE type='table' AND name='%s'"%(table_name)
+                    queryCheckTable = "SELECT name FROM sqlite_master WHERE type='table' AND name=?"
                 elif self.db_type == DbType.postgresql:
-                    queryCheckTable = "SELECT exists(SELECT * FROM information_schema.tables WHERE table_name=%s)"%(table_name)
+                    queryCheckTable = "SELECT exists(SELECT * FROM information_schema.tables WHERE table_name=?)"
 
-                if self.execute(queryCheckTable):
+                if self.query(queryCheckTable, (table_name,)):
                     # Database exists and table exists
                     check = True
-                    print("'{}' table already exist".format(table_name))
+                    print("'{}' table exist".format(table_name))
                 else:
                     print("'{}' table not exist.".format(table_name))
-                self.close()
             else:
                 # Database exists and no check on table name
                 check = True
 
+        if table_name is not None:
+            self.checkTable[table_name] = check
+
         return check
 
     def execute(self, sql: str, params: [] = None) -> int:
+        print("Execute:", sql, params)
         cursor = self.conn.cursor()
         if params:
             cursor.execute(sql, params)
@@ -146,6 +152,7 @@ class DbHelper():
         return result
 
     def query(self, sql: str, params: [] = None) -> []:
+        print("Query:", sql, params)
         cursor = self.conn.cursor()
         if params:
             cursor.execute(sql, params)
@@ -161,7 +168,34 @@ class DbHelper():
     def rollback(self):
         self.conn.rollback()
 
+    def getDbType(self):
+        return self.db_type
 
+    def hasConnection(self):
+        return self.conn != None
+
+# Extension of DbHelper for specific Arko program
+class DbHelperArko(DbHelper):
+    def __init__(self, config:dict, db_type:str):
+        super().__init__(config, db_type)
+
+    def createTable(self, table_name: str):
+        if self.db_type == DbType.postgresql:
+            primarykey = "SERIAL PRIMARY KEY"
+        elif self.db_type == DbType.sqlite:
+            primarykey = "INTEGER PRIMARY KEY AUTOINCREMENT"
+        else:
+            primarykey = "INT AUTO_INCREMENT PRIMARY KEY"
+
+        query = '''CREATE TABLE coins (
+                    id {},
+                    coingeckoid VARCHAR(80),
+                    name VARCHAR(80) NOT NULL,
+                    symbol VARCHAR(40) NOT NULL
+                    )
+                '''.format(primarykey)
+        self.execute(query)
+        
 
 def __main__():
     pass
