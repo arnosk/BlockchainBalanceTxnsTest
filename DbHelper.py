@@ -68,7 +68,7 @@ class DbHelper():
                 import sqlite3
                 dbname = self.config['dbname']
                 if create:
-                    self.conn = sqlite3.connect(dbname)
+                    self.conn = sqlite3.connect(dbname, timeout=10)
                     print('Open sqlite3: Database connected')
                 else:
                     self.conn = sqlite3.connect('file:%s?mode=rw'%dbname, uri=True)

@@ -29,6 +29,7 @@ from CoingeckoPrice import getRequestResponse
 import DbHelper
 from DbHelper import DbType
 import config
+import os 
 
 
 
@@ -62,15 +63,25 @@ def inputNumber(message: str, min: int = 1, max: int = 1):
         return userInput 
         break
 
+def safeFile(url, folder, filename):
+    #r = requests.get(url, allow_redirects=True)
+    if not os.path.isdir(folder):
+        os.makedirs(folder)
+        
+    r = getRequestResponse(url, downloadFile=True)
+    file = "%s\%s"%(folder,filename)
+    print("Saving file from url: %s as file: %s"%(url, file))
+    open(file, 'wb').write(r.content)
+
 # Insert new row into coins table
 def insertCoin(db, params):
+    safeFile(params['thumb'], "CoinImages", "coingecko_%s_%s.png"%(params['id'],"thumb"))    
+    safeFile(params['large'], "CoinImages", "coingecko_%s_%s.png"%(params['id'],"large"))    
     query = "INSERT INTO coins (coingeckoid, name, symbol) " \
             "VALUES(?,?,?)"
     args = (params['id'], params['name'], params['symbol'])
-    print(type(args))
     db.execute(query, args)
     db.commit()
-    
 
 def search(db, coinSearch):
     ps.set_option("display.max_colwidth", 20)
