@@ -10,7 +10,7 @@ Coingecko
 import requests
 import json
 import sys
-import pandas as ps
+import pandas as pd
 import DbHelper
 import config
 from datetime import datetime, timezone
@@ -21,7 +21,7 @@ from dateutil import parser
 
 # general request url function 
 # shoud be a class, with _init etc
-def getRequestResponse(url):
+def getRequestResponse(url, downloadFile = False):
     resp = []
     request_timeout = 120
     session = requests.Session()
@@ -32,6 +32,9 @@ def getRequestResponse(url):
     except requests.exceptions.RequestException:
         raise
 
+    if downloadFile:
+        return response
+    
     try:
         response.raise_for_status()
         resp = response.json()
@@ -189,6 +192,10 @@ def getTokenPriceHistory(chain, coins_contracts, currencies, date):
 
 def __main__():
     # Get Coingecko price history
+
+    # init
+    pd.set_option('display.max_rows', None)
+    pd.set_option('display.float_format', '{:e}'.format)
     
     # check if database and table coins exists and has values
     db = DbHelper.DbHelper(config.DB_CONFIG, config.DB_TYPE)
@@ -209,32 +216,33 @@ def __main__():
     
     print("* Current price of coins")
     price = getPrice(coins, curr, include_last_updated_at=True)
-    df = ps.DataFrame(price).transpose()
+    df = pd.DataFrame(price).transpose()
     print(df)
     print()
+    sys.exit()
 
-    print("* History price of token via market_chart")
-    price = getTokenPriceHistory(None, coins, curr[0], date)
-    df = ps.DataFrame(price).transpose()
-    print(df)
-    print()
-   
     print("* History price of coins")
     price = getPriceHistory(coins, curr, date)
-    df = ps.DataFrame(price).transpose()
+    df = pd.DataFrame(price).transpose()
     print(date) #("%s: %s"%(date, price))
     print(df)
     print()
-    
+ 
+    print("* History price of token via market_chart")
+    price = getTokenPriceHistory(None, coins, curr[0], date)
+    df = pd.DataFrame(price).transpose()
+    print(df)
+    print()
+      
     print("* Current price of token")
     price = getTokenPrice(chain, contracts, curr, include_last_updated_at=True)
-    df = ps.DataFrame(price).transpose()
+    df = pd.DataFrame(price).transpose()
     print(df)
     print()
     
     print("* History price of token")
     price = getTokenPriceHistory(chain, contracts, curr[0], date)
-    df = ps.DataFrame(price).transpose()
+    df = pd.DataFrame(price).transpose()
     print(df)
     print()
 
