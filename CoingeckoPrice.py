@@ -10,6 +10,7 @@ Coingecko
 import requests
 import json
 import sys
+import time
 import pandas as pd
 import DbHelper
 import config
@@ -25,10 +26,15 @@ def getRequestResponse(url, downloadFile = False):
     resp = []
     request_timeout = 120
     session = requests.Session()
-    retries = Retry(total=5, backoff_factor=0.5, status_forcelist=[502, 503, 504])
+    retries = Retry(total=5, backoff_factor=0.5, status_forcelist=[429, 502, 503, 504])
     session.mount('http://', HTTPAdapter(max_retries=retries))
     try:
         response = session.get(url, timeout=request_timeout)
+        if response.status_code == 429:
+            sleepTime = int(response.headers["Retry-After"])+1
+            print("Retrying in %s s"%(sleepTime))
+            time.sleep(sleepTime)
+            response = session.get(url, timeout=request_timeout)
     except requests.exceptions.RequestException:
         raise
 
@@ -180,11 +186,15 @@ def getTokenPriceHistory(chain, coins_contracts, currencies, date):
         resp = getRequestResponse(url)
         price = resp['prices']
 
-        # convert timestamp to date
-        for p in price:
-            p[0] = convertTimestamp(p[0], True)
-        
-        prices[coin_contract] = price
+        if (len(price) > 0):
+            # convert timestamp to date
+            for p in price:
+                p[0] = convertTimestamp(p[0], True)
+            
+            prices[coin_contract] = price
+        else:
+            # no data, set empty record
+            prices[coin_contract] = [['no data', 0]]
         
     return prices
 
@@ -207,7 +217,7 @@ def __main__():
         coins = db.query("SELECT coingeckoid FROM coins")
         coins = [i[0] for i in coins]
     else:
-        coins = ["bitcoin","litecoin"]
+        coins = ["bitcoin","litecoin","cardano","solana","ardor","proton"]
         
     curr = ["usd","eur","btc","eth"]
     date = "2022-04-01"
@@ -219,7 +229,6 @@ def __main__():
     df = pd.DataFrame(price).transpose()
     print(df)
     print()
-    sys.exit()
 
     print("* History price of coins")
     price = getPriceHistory(coins, curr, date)
@@ -228,7 +237,7 @@ def __main__():
     print(df)
     print()
  
-    print("* History price of token via market_chart")
+    print("* History price of coins via market_chart")
     price = getTokenPriceHistory(None, coins, curr[0], date)
     df = pd.DataFrame(price).transpose()
     print(df)
