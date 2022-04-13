@@ -20,21 +20,33 @@ from urllib3.util.retry import Retry
 from dateutil import parser
 #from requests.packages.urllib3.util.retry import Retry
 
+# Sleep and print countdown timer
+# Used for a 429 response retry-after
+def SleepAndPrintTime(sleepingTime):
+    for i in range(sleepingTime,0,-1):
+        sys.stdout.write("\r")
+        sys.stdout.write("{:3d} seconds remaining.".format(i))
+        sys.stdout.flush()
+        time.sleep(1)
+    print()
+
 # general request url function 
 # shoud be a class, with _init etc
 def getRequestResponse(url, downloadFile = False):
     resp = []
     request_timeout = 120
     session = requests.Session()
-    retries = Retry(total=5, backoff_factor=0.5, status_forcelist=[429, 502, 503, 504])
+    retries = Retry(total=5, backoff_factor=0.5, status_forcelist=[502, 503, 504])
     session.mount('http://', HTTPAdapter(max_retries=retries))
     try:
-        response = session.get(url, timeout=request_timeout)
-        if response.status_code == 429:
-            sleepTime = int(response.headers["Retry-After"])+1
-            print("Retrying in %s s"%(sleepTime))
-            time.sleep(sleepTime)
+        while True:
             response = session.get(url, timeout=request_timeout)
+            if response.status_code == 429:
+                sleepTime = int(response.headers["Retry-After"])+1
+                print("Retrying in %s s"%(sleepTime))
+                SleepAndPrintTime(sleepTime)
+            else:
+                break
     except requests.exceptions.RequestException:
         raise
 
@@ -202,7 +214,7 @@ def getTokenPriceHistory(chain, coins_contracts, currencies, date):
 
 def __main__():
     # Get Coingecko price history
-
+    
     # init
     pd.set_option('display.max_rows', None)
     pd.set_option('display.float_format', '{:e}'.format)
