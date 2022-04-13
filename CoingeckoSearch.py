@@ -32,17 +32,20 @@ import config
 import os 
 
 
-
-# search coin id from coingecko
 def searchId(searchStr):
+    '''
+    Search request to Coingecko
+    '''
     url = "https://api.coingecko.com/api/v3/search?query="+searchStr
     resp = getRequestResponse(url)
     resCoins = resp['coins']
     return resCoins
-    
 
-# Input row number from user
+
 def inputNumber(message: str, min: int = 1, max: int = 1):
+    '''
+    UI for asking row number
+    '''
     while True:
         userInput = input(message)
         userInput = userInput.lower()
@@ -63,8 +66,12 @@ def inputNumber(message: str, min: int = 1, max: int = 1):
         return userInput 
         break
 
+
 def safeFile(url, folder, filename):
-    #r = requests.get(url, allow_redirects=True)
+    '''
+    Download and safe a file from internet
+    If folder doesn't exists, create the folder
+    '''
     if not os.path.isdir(folder):
         os.makedirs(folder)
         
@@ -73,8 +80,12 @@ def safeFile(url, folder, filename):
     print("Saving file from url: %s as file: %s"%(url, file))
     open(file, 'wb').write(r.content)
 
-# Insert new row into coins table
+
 def insertCoin(db, params):
+    '''
+    Insert a new coin to the coins table
+    And download the thumb and large picture of the coin
+    '''
     safeFile(params['thumb'], "CoinImages", "coingecko_%s_%s.png"%(params['id'],"thumb"))    
     safeFile(params['large'], "CoinImages", "coingecko_%s_%s.png"%(params['id'],"large"))    
     query = "INSERT INTO coins (coingeckoid, name, symbol) " \
@@ -83,7 +94,18 @@ def insertCoin(db, params):
     db.execute(query, args)
     db.commit()
 
+
 def search(db, coinSearch):
+    '''
+    Search coins in own database (if table exists)
+    Show the results
+    
+    Search coins from internet (Coingecko)
+    Show the results
+    
+    User can select a row number, from the table of search results
+    To add that coin to the coins table, if it doesn't already exists
+    '''
     ps.set_option("display.max_colwidth", 20)
 
     # Check if coin already in database and add to search result on row 0
@@ -140,7 +162,6 @@ def search(db, coinSearch):
                 # add new row to table coins
                 insertCoin(db, coin)
                 
-
 
 def __main__():
     parser = argparse.ArgumentParser()

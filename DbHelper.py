@@ -6,17 +6,23 @@ Created on Mar 23, 2022
 Database Helper Utilities Class
 
 more info: https://github.com/xfoobar/slim_helper/blob/main/slim_helper/db_helper.py
-
 '''
 from enum import Enum,auto
 
+
 class DbType(Enum):
+    '''
+    Class for enumerating databse types
+    Possible types:
+    SQLite and PostgreSQL
+    '''
     sqlite = auto()
     postgresql = auto()
 
     @classmethod
     def hasMember(cls, member):
         return member in cls._member_names_
+
 
 class DbHelper():
     '''
@@ -63,16 +69,20 @@ class DbHelper():
             self.conn = None
 
     def open(self, create = True):
+        '''
+        Function to open a connection to the database
+        For SQLite: When create is True it creates a new database when it doesnot exists
+        '''
         if not self.conn:
             if self.db_type == DbType.sqlite:
                 import sqlite3
                 dbname = self.config['dbname']
                 if create:
                     self.conn = sqlite3.connect(dbname, timeout=10)
-                    print('Open sqlite3: Database connected')
+                    print('Open sqlite3: Database connected %s'%self.conn)
                 else:
                     self.conn = sqlite3.connect('file:%s?mode=rw'%dbname, uri=True)
-                    print('Open sqlite3: Database not connected.')
+                    print('Open sqlite3: Database connected %s'%self.conn)
                 
                 
             elif self.db_type == DbType.postgresql:
@@ -102,9 +112,11 @@ class DbHelper():
         else:
             raise RuntimeError('Database connection already exists')
 
-    # Check database existence
-    # and if set check table existence
     def checkDb(self, table_name: str = None):
+        '''
+        Check wether the database exists and can be found
+        If provided with a table_name also check if this table is already created
+        '''
         check = False
 
         # check existance of database
@@ -114,7 +126,7 @@ class DbHelper():
             except:
                 check = False
 
-        # check existance of table if there is a connection to database
+        # check existance of table
         if self.conn is not None:
             if table_name is not None:
                 if self.db_type == DbType.sqlite:
@@ -138,6 +150,10 @@ class DbHelper():
         return check
 
     def execute(self, sql: str, params: [] = None) -> int:
+        '''
+        Executes a query and returns number of rows or number of changes
+        For SQLite cursor.rowcount doesn't exists
+        '''
         print("Execute:", sql, params)
         cursor = self.conn.cursor()
         if params:
@@ -152,6 +168,9 @@ class DbHelper():
         return result
 
     def query(self, sql: str, params: [] = None) -> []:
+        '''
+        Executes a query and returns the result
+        '''
         print("Query:", sql, params)
         cursor = self.conn.cursor()
         if params:
@@ -174,12 +193,20 @@ class DbHelper():
     def hasConnection(self):
         return self.conn != None
 
-# Extension of DbHelper for specific Arko program
+
 class DbHelperArko(DbHelper):
+    '''
+    Extension of DbHelper
+    With special features/functions for Arko program
+    '''
     def __init__(self, config:dict, db_type:str):
         super().__init__(config, db_type)
 
     def createTable(self, table_name: str):
+        '''
+        Create a new table
+        For now only coins table
+        '''
         if self.db_type == DbType.postgresql:
             primarykey = "SERIAL PRIMARY KEY"
         elif self.db_type == DbType.sqlite:
@@ -195,7 +222,7 @@ class DbHelperArko(DbHelper):
                     )
                 '''.format(primarykey)
         self.execute(query)
-        
+
 
 def __main__():
     pass

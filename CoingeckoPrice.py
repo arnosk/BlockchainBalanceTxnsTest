@@ -18,11 +18,13 @@ from datetime import datetime, timezone
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from dateutil import parser
-#from requests.packages.urllib3.util.retry import Retry
 
-# Sleep and print countdown timer
-# Used for a 429 response retry-after
+
 def SleepAndPrintTime(sleepingTime):
+    '''
+    Sleep and print countdown timer
+    Used for a 429 response retry-aftero
+    '''
     for i in range(sleepingTime,0,-1):
         sys.stdout.write("\r")
         sys.stdout.write("{:3d} seconds remaining.".format(i))
@@ -30,9 +32,12 @@ def SleepAndPrintTime(sleepingTime):
         time.sleep(1)
     print()
 
-# general request url function 
-# shoud be a class, with _init etc
+
 def getRequestResponse(url, downloadFile = False):
+    '''
+    general request url function 
+    shoud be a class, with _init etc
+    '''
     resp = []
     request_timeout = 120
     session = requests.Session()
@@ -61,9 +66,11 @@ def getRequestResponse(url, downloadFile = False):
     
     return resp
 
-# add params to url
-# not used yet
+
 def api_url_params(url, params, api_url_has_params=False):
+    '''
+    Add params to the url
+    '''
     if params:
         # if api_url contains already params and there is already a '?' avoid
         # adding second '?' (api_url += '&' if '?' in api_url else '?'); causes
@@ -78,17 +85,23 @@ def api_url_params(url, params, api_url_has_params=False):
         url = url[:-1]
     return url
 
-# convert timestamp to date string
-# ts = timestamp in sec if ms = False
-# ts = timestamp in msec if ms = True
+
 def convertTimestamp(ts, ms=False):
+    '''
+    convert timestamp to date string
+    ts = timestamp in sec if ms = False
+    ts = timestamp in msec if ms = True
+    '''
     if ms:
         ts = int(ts/1000)
     dt = datetime.fromtimestamp(ts, tz=timezone.utc)
     return str(dt)
 
-# convert LastUpdated field in dictonary from timestamp to date
+
 def convertTimestampLastUpdated(resp):
+    '''
+    convert LastUpdated field in dictonary from timestamp to date
+    '''
     key = 'last_updated_at'
     for v in resp.values():
         if key in v.keys():
@@ -97,11 +110,13 @@ def convertTimestampLastUpdated(resp):
     return resp
 
 
-# Get coingecko history price
-# one price per day, not suitable for tax in Netherlands on 31-12-20xx 23:00
-# Thumbnail image is available
-# coins can be a list of strings or a single string
 def getPriceHistory(coins, currencies, date):
+    '''
+    Get coingecko history price
+    one price per day, not suitable for tax in Netherlands on 31-12-20xx 23:00
+    coins can be a list of strings or a single string
+    Thumbnail image is available
+    '''
     if not isinstance(coins, list):
         coins = [coins]
 
@@ -123,10 +138,11 @@ def getPriceHistory(coins, currencies, date):
     return prices
 
 
-
-# Get coingecko current price
-# Thumbnail image is available
 def getPrice(coins, currencies, **kwargs):
+    '''
+    Get coingecko current price
+    Thumbnail image is available
+    '''
     # convert list to comma-separated string
     if isinstance(coins, list):
         coins = ','.join(coins)
@@ -146,8 +162,11 @@ def getPrice(coins, currencies, **kwargs):
 
     return resp
 
-# Get coingecko current price of a token
+
 def getTokenPrice(chain, contracts, currencies, **kwargs):
+    '''
+    Get coingecko current price of a token
+    '''
     # convert list to comma-separated string
     if isinstance(contracts, list):
         contracts = ','.join(contracts)
@@ -167,10 +186,13 @@ def getTokenPrice(chain, contracts, currencies, **kwargs):
 
     return resp
 
-# Get coingecko history price of a coin or a token
-# coins_contracts can be a list of strings or a single string
-# If chain = "none" or None search for a coins otherwise search for token contracts
+
 def getTokenPriceHistory(chain, coins_contracts, currencies, date):
+    '''
+    Get coingecko history price of a coin or a token
+    coins_contracts can be a list of strings or a single string
+    If chain = "none" or None search for a coins otherwise search for token contracts
+    '''
     if not isinstance(coins_contracts, list):
         contracts = [coins_contracts]
     if isinstance(currencies, list):
@@ -209,7 +231,6 @@ def getTokenPriceHistory(chain, coins_contracts, currencies, date):
             prices[coin_contract] = [['no data', 0]]
         
     return prices
-
 
 
 def __main__():
@@ -266,6 +287,7 @@ def __main__():
     df = pd.DataFrame(price).transpose()
     print(df)
     print()
+
 
 if __name__=='__main__':
     __main__()
