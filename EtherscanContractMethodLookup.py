@@ -36,6 +36,14 @@ ethAddress = Web3.toChecksumAddress(config.ETH_ADDRESS[3])
 
 
 def getMethod4ByteDir(methodId):
+    '''
+    Search for ethereum signature method on www.4byte.directory
+    
+    Function calls in the Ethereum Virtual Machine are specified by the first
+    four bytes of data sent with a transaction. These 4-byte signatures are 
+    defined as the first four bytes of the Keccak hash (SHA3) of the canonical 
+    representation of the function signature
+    '''
     if len(methodId) != 10:
         return ''
     
@@ -50,6 +58,10 @@ def getMethod4ByteDir(methodId):
 
 
 def getContractImplementation(contractAddr):
+    '''
+    When a contract is a proxy contract, this function gets the implementation contract address
+    This is only possible when proxy contract are public
+    '''
     web3 = Web3(Web3.HTTPProvider(config.ETH_HTTP_PROVIDER2))
     if (not web3.isConnected()):
         print("No ethereum provider, Web3 disconnected")
@@ -61,6 +73,13 @@ def getContractImplementation(contractAddr):
 
 
 def getMethodContract(methodId, contractAddr):
+    '''
+    Retrieve the contract method function name from etherscan
+    
+    Reads all functions of a contract,
+    When methodId correspond with methodId from one of these functions, return a readable function name
+    When there is a implementation function, also search the implementation contract address for methods
+    '''
     if len(methodId) != 10 or contractAddr == '':
         return ''
     
@@ -99,11 +118,14 @@ def getMethodContract(methodId, contractAddr):
                     return getMethodContract(methodId, contrProxy)
         #print()
     #print('----')
-    # not method found
+    # no method found
     return 'No method found'
 
 
 def __main__():
+    '''
+    Get a list of normal transactions for an address
+    '''
     print('Get a list of "Normal" Transactions By Address')
     urlEthTxlist =  config.ETHERSCAN_URL + \
                     '?module=account&action=txlist&address=' + \

@@ -13,6 +13,10 @@ import sys
 
 
 def __main__():
+    '''
+    Get native balance of an address on the ETH and BSC chain
+    Through a Web3 HTTP provider
+    '''
     w3_eth = Web3(Web3.HTTPProvider(config.ETH_HTTP_PROVIDER))
     w3_bsc = Web3(Web3.HTTPProvider(config.BSC_HTTP_PROVIDER))
     if (not w3_eth.isConnected()):

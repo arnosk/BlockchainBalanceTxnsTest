@@ -12,6 +12,9 @@ import sys
 
 
 def getTokenBalance(ethAddr, tokenAddr, w3, ABI):
+    '''
+    Get token balance for an address via Web3
+    '''
     tokenContract = w3.eth.contract(tokenAddr, abi=ABI)
     tokenBalance = tokenContract.functions.balanceOf(ethAddr).call()
     tokenName = tokenContract.functions.name().call()

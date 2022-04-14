@@ -40,6 +40,10 @@ parser.add_argument('-s', '--start-block', type=int, help='Start block', default
 parser.add_argument('-e', '--end-block',  type=int, help='End block', default=w3.eth.blockNumber)
 
 def tx_to_json(tx):
+    '''
+    Transform a dict to a Json
+    In case the values are HexBytes convert to normal hex values 
+    '''
     result = {}
     for key, val in tx.items():
         if isinstance(val, HexBytes):
@@ -50,6 +54,13 @@ def tx_to_json(tx):
     return json.dumps(result)
 
 def __main__():
+    '''
+    Exports transactions to a JSON file where each line
+    contains the data returned from the JSONRPC interface
+
+    The following script fetches blocks and filters transactions to/from the given
+    address. You can modify it to suit your needs.
+    '''
     args = parser.parse_args()
 
     start_block = args.start_block

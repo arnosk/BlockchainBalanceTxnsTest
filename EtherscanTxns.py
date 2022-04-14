@@ -19,7 +19,6 @@ import config
 from datetime import datetime, timezone
 import time
 import sys
-#import json
 
 
 ethAddress = Web3.toChecksumAddress(config.ETH_ADDRESS[3])
@@ -29,6 +28,10 @@ ethAddress = Web3.toChecksumAddress(config.ETH_ADDRESS[3])
 #ethAddress = '0x9dd134d14d1e65f84b706d6f205cd5b1cd03a46b' # mined block
 
 def getRequestResponse(url):
+    '''
+    Get a response from an url request
+    Will retry in case of an exception after
+    '''
     resp = []
     retries = 1
     succes = False

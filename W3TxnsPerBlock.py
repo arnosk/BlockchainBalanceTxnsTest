@@ -27,6 +27,10 @@ from hexbytes import HexBytes
 
 
 def tx_to_json(tx):
+    '''
+    Transform a dict to a Json
+    In case the values are HexBytes convert to normal hex values 
+    '''
     result = {}
     for key, val in tx.items():
         if isinstance(val, HexBytes):
@@ -37,6 +41,14 @@ def tx_to_json(tx):
     return json.dumps(result)
 
 def __main__():
+    '''
+    Exports transactions to a JSON file where each line
+    contains the data returned from the JSONRPC interface
+
+    The following script fetches blocks via Web3 and filters transactions to/from the given
+    address. You can modify it to suit your needs.
+
+    '''
     w3_eth = Web3(Web3.HTTPProvider(config.ETH_HTTP_PROVIDER))
     w3_bsc = Web3(Web3.HTTPProvider(config.BSC_HTTP_PROVIDER))
     if (not w3_eth.isConnected()):
