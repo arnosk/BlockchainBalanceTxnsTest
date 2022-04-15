@@ -9,9 +9,11 @@ Coingecko
 '''
 import requests
 import json
+import argparse
 import sys
 import time
 import pandas as pd
+import re
 import DbHelper
 import config
 from datetime import datetime, timezone
@@ -250,7 +252,21 @@ def getTokenPriceHistory(chain, coins_contracts, currencies, date):
 
 
 def __main__():
-    # Get Coingecko price history
+    '''
+    Get Coingecko price history
+
+    Arguments:
+    - date for historical prices
+    - coin search prices for specfic coin
+    - output file for saving results in a csv file
+    '''
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-d', '--date', type=str, help='Historical date to search on Coingecko', default='2022-04-01')
+    parser.add_argument('-c', '--coin', type=str, help='List of coins to search on Coingecko')
+    parser.add_argument('-o', '--output', type=str, help='Path to the output CSV file', required=False)
+    args = parser.parse_args()
+    date = args.date
+    coinStr = args.coin
     
     # init
     pd.set_option('display.max_rows', None)
@@ -261,15 +277,17 @@ def __main__():
     dbExist = db.checkDb(table_name = 'coins')
     print('Database and table coins exist: %s'%dbExist)
     
-    # if yes, read the coingecko ids, if not use default
-    if dbExist:
+    # Determine which coins to retrieve prices for
+    # From arguments, from database, or take default
+    if coinStr != None:
+        coins = re.split('[;,]', coinStr)
+    elif dbExist:
         coins = db.query("SELECT coingeckoid FROM coins")
         coins = [i[0] for i in coins]
     else:
         coins = ["bitcoin","litecoin","cardano","solana","ardor","proton"]
         
     curr = ["usd","eur","btc","eth"]
-    date = "2022-04-01"
     chain = "binance-smart-chain"
     contracts = ["0x62858686119135cc00C4A3102b436a0eB314D402","0xacfc95585d80ab62f67a14c566c1b7a49fe91167"]
     
