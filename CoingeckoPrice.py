@@ -262,10 +262,10 @@ def getTokenPriceHistory(chain, coins_contracts, currencies, date):
             for p in price:
                 p[0] = convertTimestamp(p[0], True)
             
-            prices[coin_contract] = price
+            prices[coin_contract] = price[0]
         else:
             # no data, set empty record
-            prices[coin_contract] = [['no data', 0]]
+            prices[coin_contract] = ['no data', 0]
         
     return prices
 
