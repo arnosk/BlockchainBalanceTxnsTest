@@ -14,12 +14,14 @@ import sys
 import time
 import pandas as pd
 import re
+import openpyxl
 import DbHelper
 import config
 from datetime import datetime, timezone
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from dateutil import parser
+from pathlib import Path
 
 
 def SleepAndPrintTime(sleepingTime):
@@ -111,7 +113,7 @@ def convertTimestamp(ts, ms=False):
 
 def convertTimestampLastUpdated(resp):
     '''
-    convert LastUpdated field in dictonary from timestamp to date
+    Convert LastUpdated field in dictonary from timestamp to date
     '''
     key = 'last_updated_at'
     for v in resp.values():
@@ -120,6 +122,23 @@ def convertTimestampLastUpdated(resp):
             v.update({key:convertTimestamp(ts, False)})
     return resp
 
+
+def writeToFile(df, outputCSV, outputXLS, extension):
+    '''
+    Write a dataframe to a csv file and/or excel file
+    '''
+    if outputCSV is not None:
+        filepath = Path('%s%s.csv'%(outputCSV, extension))  
+        filepath.parent.mkdir(parents=True, exist_ok=True)  
+        df.to_csv(filepath)
+        print("File written: %s"%(filepath))
+
+    if outputXLS is not None:
+        filepath = Path('%s%s.xlsx'%(outputXLS, extension))  
+        filepath.parent.mkdir(parents=True, exist_ok=True)  
+        df.to_excel(filepath)
+        print("File written: %s"%(filepath))
+    
 
 def getPriceHistory(coins, currencies, date):
     '''
@@ -260,15 +279,20 @@ def __main__():
     - coin search prices for specfic coin
     - output file for saving results in a csv file
     '''
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--date', type=str, help='Historical date to search on Coingecko', default='2022-04-01')
-    parser.add_argument('-c', '--coin', type=str, help='List of coins to search on Coingecko')
-    parser.add_argument('-o', '--output', type=str, help='Path to the output CSV file', required=False)
-    args = parser.parse_args()
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument('-d', '--date', type=str, help='Historical date to search on Coingecko', default='2022-04-01')
+    argparser.add_argument('-c', '--coin', type=str, help='List of coins to search on Coingecko')
+    argparser.add_argument('-oc', '--outputCSV', type=str, help='Filename and path to output CSV file', required=False)
+    argparser.add_argument('-ox', '--outputXLS', type=str, help='Filename and path to the output Excel file', required=False)
+    args = argparser.parse_args()
     date = args.date
     coinStr = args.coin
+    outputCSV = args.outputCSV
+    outputXLS = args.outputXLS
+    currentDate = datetime.now().strftime("%Y%m%d-%H%M")
+    print("Current date:", currentDate)
     
-    # init
+    # init pandas displaying
     pd.set_option('display.max_rows', None)
     pd.set_option('display.float_format', '{:.6e}'.format)
     
@@ -297,6 +321,7 @@ def __main__():
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
     print(df)
+    writeToFile(df, outputCSV, outputXLS, "_current_coins_%s"%(currentDate))
     print()
 
     print("* History price of coins")
@@ -306,6 +331,7 @@ def __main__():
     print()
     print(date) #("%s: %s"%(date, price))
     print(df)
+    writeToFile(df, outputCSV, outputXLS, "_hist_%s"%(date))
     print()
  
     print("* History price of coins via market_chart")
@@ -314,6 +340,7 @@ def __main__():
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
     print(df)
+    writeToFile(df, outputCSV, outputXLS, "_hist_marketchart_%s"%(date))
     print()
       
     print("* Current price of token")
@@ -322,14 +349,16 @@ def __main__():
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
     print(df)
+    writeToFile(df, outputCSV, outputXLS, "_current_token_%s"%(currentDate))
     print()
     
-    print("* History price of token")
+    print("* History price of token via market_chart")
     price = getTokenPriceHistory(chain, contracts, curr[0], date)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
     print(df)
+    writeToFile(df, outputCSV, outputXLS, "_hist_marketchart_token_%s"%(date))
     print()
 
 

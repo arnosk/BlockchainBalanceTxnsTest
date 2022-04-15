@@ -4,3 +4,4 @@ web3
 datetime
 pandas
 psycopg2
+openpyxl

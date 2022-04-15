@@ -72,8 +72,7 @@ def safeFile(url, folder, filename):
     Download and safe a file from internet
     If folder doesn't exists, create the folder
     '''
-    if not os.path.isdir(folder):
-        os.makedirs(folder)
+    os.makedirs(folder, exist_ok=True)
         
     r = getRequestResponse(url, downloadFile=True)
     file = "%s\%s"%(folder,filename)
@@ -164,11 +163,9 @@ def search(db, coinSearch):
                 
 
 def __main__():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--coin', type=str, help='Coin name to search on Coingecko')
-    #parser.add_argument('-c', '--coin', type=str, help='Coin name to search on Coingecko', default='BTC')
-    #parser.add_argument('-o', '--output', type=str, help='Path to the output JSON file', required=True)
-    args = parser.parse_args()
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument('-c', '--coin', type=str, help='Coin name to search on Coingecko')
+    args = argparser.parse_args()
     coinSearch = args.coin
     
     db = DbHelper.DbHelperArko(config.DB_CONFIG, config.DB_TYPE)
