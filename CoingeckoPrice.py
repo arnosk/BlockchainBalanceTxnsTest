@@ -25,12 +25,22 @@ def SleepAndPrintTime(sleepingTime):
     Sleep and print countdown timer
     Used for a 429 response retry-aftero
     '''
+    print()
+    print("Retrying in %s s"%(sleepingTime))
     for i in range(sleepingTime,0,-1):
-        sys.stdout.write("\r")
-        sys.stdout.write("{:3d} seconds remaining.".format(i))
+        sys.stdout.write("{:3d} seconds remaining.\r".format(i))
         sys.stdout.flush()
         time.sleep(1)
     print()
+
+
+def showProgress(nr, total):
+    '''
+    Show progress to standard output
+    '''
+    sys.stdout.write("Retrieving nr {:3d} of {}\r".format(nr, total))
+    sys.stdout.flush()
+
 
 
 def getRequestResponse(url, downloadFile = False):
@@ -48,7 +58,6 @@ def getRequestResponse(url, downloadFile = False):
             response = session.get(url, timeout=request_timeout)
             if response.status_code == 429:
                 sleepTime = int(response.headers["Retry-After"])+1
-                print("Retrying in %s s"%(sleepTime))
                 SleepAndPrintTime(sleepTime)
             else:
                 break
@@ -125,7 +134,10 @@ def getPriceHistory(coins, currencies, date):
     date = dt.strftime("%d-%m-%Y")
     
     prices = {}
+    i = 0
     for coin in coins:
+        i += 1
+        showProgress(i, len(coins))
         url = "https://api.coingecko.com/api/v3/coins/"+coin+"/history?date="+date+"&localization=false"
         resp = getRequestResponse(url)
         #print("price of "+coin+" "+date+": ", resp['market_data']['current_price'][currency],currency)
@@ -210,8 +222,12 @@ def getTokenPriceHistory(chain, coins_contracts, currencies, date):
 
     if (chain is not None):
         chain = chain.lower()
+
     prices = {}
+    i = 0
     for coin_contract in coins_contracts:
+        i += 1
+        showProgress(i, len(coins_contracts))
         if (chain=='none' or chain is None): 
             url = "https://api.coingecko.com/api/v3/coins/"+coin_contract+"/market_chart/range"
         else:
@@ -238,7 +254,7 @@ def __main__():
     
     # init
     pd.set_option('display.max_rows', None)
-    pd.set_option('display.float_format', '{:e}'.format)
+    pd.set_option('display.float_format', '{:.6e}'.format)
     
     # check if database and table coins exists and has values
     db = DbHelper.DbHelper(config.DB_CONFIG, config.DB_TYPE)
@@ -261,6 +277,7 @@ def __main__():
     price = getPrice(coins, curr, include_last_updated_at=True)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
+    print()
     print(df)
     print()
 
@@ -268,6 +285,7 @@ def __main__():
     price = getPriceHistory(coins, curr, date)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
+    print()
     print(date) #("%s: %s"%(date, price))
     print(df)
     print()
@@ -276,6 +294,7 @@ def __main__():
     price = getTokenPriceHistory(None, coins, curr[0], date)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
+    print()
     print(df)
     print()
       
@@ -283,6 +302,7 @@ def __main__():
     price = getTokenPrice(chain, contracts, curr, include_last_updated_at=True)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
+    print()
     print(df)
     print()
     
@@ -290,6 +310,7 @@ def __main__():
     price = getTokenPriceHistory(chain, contracts, curr[0], date)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
+    print()
     print(df)
     print()
 
