@@ -7,37 +7,34 @@ Collecting prices
 
 Coingecko
 '''
-import requests
+import sys
 import json
 import argparse
-import sys
-import time
 import pandas as pd
 import re
 import openpyxl
 import DbHelper
+import RequestHelper
 import config
 from datetime import datetime, timezone
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 from dateutil import parser
 from pathlib import Path
 
 
-def SleepAndPrintTime(sleepingTime):
-    '''
-    Sleep and print countdown timer
-    Used for a 429 response retry-aftero
-    '''
-    print()
-    print("Retrying in %s s"%(sleepingTime))
-    for i in range(sleepingTime,0,-1):
-        sys.stdout.write("{:3d} seconds remaining.\r".format(i))
-        sys.stdout.flush()
-        time.sleep(1)
-    print()
-
-
+##def SleepAndPrintTime(sleepingTime):
+##    '''
+##    Sleep and print countdown timer
+##    Used for a 429 response retry-aftero
+##    '''
+##    print()
+##    print("Retrying in %s s"%(sleepingTime))
+##    for i in range(sleepingTime,0,-1):
+##        sys.stdout.write("{:3d} seconds remaining.\r".format(i))
+##        sys.stdout.flush()
+##        time.sleep(1)
+##    print()
+##
+##
 def showProgress(nr, total):
     '''
     Show progress to standard output
@@ -46,39 +43,39 @@ def showProgress(nr, total):
     sys.stdout.flush()
 
 
-
-def getRequestResponse(url, downloadFile = False):
-    '''
-    general request url function 
-    shoud be a class, with _init etc
-    '''
-    resp = []
-    request_timeout = 120
-    session = requests.Session()
-    retries = Retry(total=5, backoff_factor=0.5, status_forcelist=[502, 503, 504])
-    session.mount('http://', HTTPAdapter(max_retries=retries))
-    try:
-        while True:
-            response = session.get(url, timeout=request_timeout)
-            if response.status_code == 429:
-                sleepTime = int(response.headers["Retry-After"])+1
-                SleepAndPrintTime(sleepTime)
-            else:
-                break
-    except requests.exceptions.RequestException:
-        raise
-
-    if downloadFile:
-        return response
-    
-    try:
-        response.raise_for_status()
-        resp = response.json()
-    except Exception as e:
-        raise
-    
-    return resp
-
+##
+##def getRequestResponse(url, downloadFile = False):
+##    '''
+##    general request url function 
+##    should be a class, with _init etc
+##    '''
+##    resp = []
+##    request_timeout = 120
+##    session = requests.Session()
+##    retries = Retry(total=5, backoff_factor=0.5, status_forcelist=[502, 503, 504])
+##    session.mount('http://', HTTPAdapter(max_retries=retries))
+##    try:
+##        while True:
+##            response = session.get(url, timeout=request_timeout)
+##            if response.status_code == 429:
+##                sleepTime = int(response.headers["Retry-After"])+1
+##                SleepAndPrintTime(sleepTime)
+##            else:
+##                break
+##    except requests.exceptions.RequestException:
+##        raise
+##
+##    if downloadFile:
+##        return response
+##    
+##    try:
+##        response.raise_for_status()
+##        resp = response.json()
+##    except Exception as e:
+##        raise
+##    
+##    return resp
+##
 
 def api_url_params(url, params, api_url_has_params=False):
     '''
@@ -140,7 +137,7 @@ def writeToFile(df, outputCSV, outputXLS, extension):
         print("File written: %s"%(filepath))
     
 
-def getPriceHistory(coins, currencies, date):
+def getPriceHistory(req, coins, currencies, date):
     '''
     Get coingecko history price
     one price per day, not suitable for tax in Netherlands on 31-12-20xx 23:00
@@ -160,7 +157,7 @@ def getPriceHistory(coins, currencies, date):
         i += 1
         showProgress(i, len(coins))
         url = "https://api.coingecko.com/api/v3/coins/"+coin+"/history?date="+date+"&localization=false"
-        resp = getRequestResponse(url)
+        resp = req.getRequestResponse(url)
         #print("price of "+coin+" "+date+": ", resp['market_data']['current_price'][currency],currency)
         #print("MarketCap of "+coin+" "+date+": ", resp['market_data']['market_cap'][currency],currency)
         price = {}
@@ -171,7 +168,7 @@ def getPriceHistory(coins, currencies, date):
     return prices
 
 
-def getPrice(coins, currencies, **kwargs):
+def getPrice(req, coins, currencies, **kwargs):
     '''
     Get coingecko current price
     Thumbnail image is available
@@ -188,7 +185,7 @@ def getPrice(coins, currencies, **kwargs):
         
     url = "https://api.coingecko.com/api/v3/simple/price"
     url = api_url_params(url, kwargs)
-    resp = getRequestResponse(url)
+    resp = req.getRequestResponse(url)
     
     # convert timestamp to date
     resp = convertTimestampLastUpdated(resp)
@@ -196,7 +193,7 @@ def getPrice(coins, currencies, **kwargs):
     return resp
 
 
-def getTokenPrice(chain, contracts, currencies, **kwargs):
+def getTokenPrice(req, chain, contracts, currencies, **kwargs):
     '''
     Get coingecko current price of a token
     '''
@@ -212,7 +209,7 @@ def getTokenPrice(chain, contracts, currencies, **kwargs):
         
     url = "https://api.coingecko.com/api/v3/simple/token_price/"+chain
     url = api_url_params(url, kwargs)
-    resp = getRequestResponse(url)
+    resp = req.getRequestResponse(url)
     
     # convert timestamp to date
     resp = convertTimestampLastUpdated(resp)
@@ -220,7 +217,7 @@ def getTokenPrice(chain, contracts, currencies, **kwargs):
     return resp
 
 
-def getTokenPriceHistory(chain, coins_contracts, currencies, date):
+def getTokenPriceHistory(req, chain, coins_contracts, currencies, date):
     '''
     Get coingecko history price of a coin or a token
     coins_contracts can be a list of strings or a single string
@@ -254,7 +251,7 @@ def getTokenPriceHistory(chain, coins_contracts, currencies, date):
         else:
             url = "https://api.coingecko.com/api/v3/coins/"+chain+"/contract/"+coin_contract+"/market_chart/range"
         url = api_url_params(url, params)
-        resp = getRequestResponse(url)
+        resp = req.getRequestResponse(url)
         price = resp['prices']
 
         if (len(price) > 0):
@@ -295,6 +292,9 @@ def __main__():
     # init pandas displaying
     pd.set_option('display.max_rows', None)
     pd.set_option('display.float_format', '{:.6e}'.format)
+
+    # init request helper class
+    req = RequestHelper.RequestHelper()
     
     # check if database and table coins exists and has values
     db = DbHelper.DbHelper(config.DB_CONFIG, config.DB_TYPE)
@@ -316,7 +316,7 @@ def __main__():
     contracts = ["0x62858686119135cc00C4A3102b436a0eB314D402","0xacfc95585d80ab62f67a14c566c1b7a49fe91167"]
     
     print("* Current price of coins")
-    price = getPrice(coins, curr, include_last_updated_at=True)
+    price = getPrice(req, coins, curr, include_last_updated_at=True)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
@@ -325,7 +325,7 @@ def __main__():
     print()
 
     print("* History price of coins")
-    price = getPriceHistory(coins, curr, date)
+    price = getPriceHistory(req, coins, curr, date)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
@@ -335,7 +335,7 @@ def __main__():
     print()
  
     print("* History price of coins via market_chart")
-    price = getTokenPriceHistory(None, coins, curr[0], date)
+    price = getTokenPriceHistory(req, None, coins, curr[0], date)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
@@ -344,7 +344,7 @@ def __main__():
     print()
       
     print("* Current price of token")
-    price = getTokenPrice(chain, contracts, curr, include_last_updated_at=True)
+    price = getTokenPrice(req, chain, contracts, curr, include_last_updated_at=True)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
@@ -353,7 +353,7 @@ def __main__():
     print()
     
     print("* History price of token via market_chart")
-    price = getTokenPriceHistory(chain, contracts, curr[0], date)
+    price = getTokenPriceHistory(req, chain, contracts, curr[0], date)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()

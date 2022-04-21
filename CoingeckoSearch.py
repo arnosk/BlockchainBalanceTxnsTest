@@ -25,19 +25,19 @@ the key coins has a list of the search result of coins
 import pandas as ps
 import argparse
 import sys
-from CoingeckoPrice import getRequestResponse
+import RequestHelper
 import DbHelper
 from DbHelper import DbType
 import config
 import os 
 
 
-def searchId(searchStr):
+def searchId(req, searchStr):
     '''
     Search request to Coingecko
     '''
     url = "https://api.coingecko.com/api/v3/search?query="+searchStr
-    resp = getRequestResponse(url)
+    resp = req.getRequestResponse(url)
     resCoins = resp['coins']
     return resCoins
 
@@ -67,26 +67,26 @@ def inputNumber(message: str, min: int = 1, max: int = 1):
         break
 
 
-def safeFile(url, folder, filename):
+def safeFile(req, url, folder, filename):
     '''
     Download and safe a file from internet
     If folder doesn't exists, create the folder
     '''
     os.makedirs(folder, exist_ok=True)
         
-    r = getRequestResponse(url, downloadFile=True)
+    r = req.getRequestResponse(url, downloadFile=True)
     file = "%s\%s"%(folder,filename)
     print("Saving file from url: %s as file: %s"%(url, file))
     open(file, 'wb').write(r.content)
 
 
-def insertCoin(db, params):
+def insertCoin(req, db, params):
     '''
     Insert a new coin to the coins table
     And download the thumb and large picture of the coin
     '''
-    safeFile(params['thumb'], "CoinImages", "coingecko_%s_%s.png"%(params['id'],"thumb"))    
-    safeFile(params['large'], "CoinImages", "coingecko_%s_%s.png"%(params['id'],"large"))    
+    safeFile(req, params['thumb'], "CoinImages", "coingecko_%s_%s.png"%(params['id'],"thumb"))    
+    safeFile(req, params['large'], "CoinImages", "coingecko_%s_%s.png"%(params['id'],"large"))    
     query = "INSERT INTO coins (coingeckoid, name, symbol) " \
             "VALUES(?,?,?)"
     args = (params['id'], params['name'], params['symbol'])
@@ -94,7 +94,7 @@ def insertCoin(db, params):
     db.commit()
 
 
-def search(db, coinSearch):
+def search(req, db, coinSearch):
     '''
     Search coins in own database (if table exists)
     Show the results
@@ -119,7 +119,7 @@ def search(db, coinSearch):
             print(dbResultdf)
 
     # Do search on coingecko
-    cgResult = searchId(coinSearch)
+    cgResult = searchId(req, coinSearch)
     cgResultdf = ps.DataFrame(cgResult)
     print("Search from coingecko:")
     print(cgResultdf)
@@ -159,7 +159,7 @@ def search(db, coinSearch):
                 print("Database already has a row with the coin %s"%(coin['id']))
             else:
                 # add new row to table coins
-                insertCoin(db, coin)
+                insertCoin(req, db, coin)
                 
 
 def __main__():
@@ -167,6 +167,8 @@ def __main__():
     argparser.add_argument('-c', '--coin', type=str, help='Coin name to search on Coingecko')
     args = argparser.parse_args()
     coinSearch = args.coin
+
+    req = RequestHelper.RequestHelper()
     
     db = DbHelper.DbHelperArko(config.DB_CONFIG, config.DB_TYPE)
     dbExist = db.checkDb()
@@ -178,7 +180,7 @@ def __main__():
     while True:
         if coinSearch == None:
             coinSearch = input("Search for coin: ")
-        search(db, coinSearch)
+        search(req, db, coinSearch)
         coinSearch = None
 
 if __name__=='__main__':
