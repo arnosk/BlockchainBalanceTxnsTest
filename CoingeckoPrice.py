@@ -21,79 +21,12 @@ from dateutil import parser
 from pathlib import Path
 
 
-##def SleepAndPrintTime(sleepingTime):
-##    '''
-##    Sleep and print countdown timer
-##    Used for a 429 response retry-aftero
-##    '''
-##    print()
-##    print("Retrying in %s s"%(sleepingTime))
-##    for i in range(sleepingTime,0,-1):
-##        sys.stdout.write("{:3d} seconds remaining.\r".format(i))
-##        sys.stdout.flush()
-##        time.sleep(1)
-##    print()
-##
-##
 def showProgress(nr, total):
     '''
     Show progress to standard output
     '''
     sys.stdout.write("Retrieving nr {:3d} of {}\r".format(nr, total))
     sys.stdout.flush()
-
-
-##
-##def getRequestResponse(url, downloadFile = False):
-##    '''
-##    general request url function 
-##    should be a class, with _init etc
-##    '''
-##    resp = []
-##    request_timeout = 120
-##    session = requests.Session()
-##    retries = Retry(total=5, backoff_factor=0.5, status_forcelist=[502, 503, 504])
-##    session.mount('http://', HTTPAdapter(max_retries=retries))
-##    try:
-##        while True:
-##            response = session.get(url, timeout=request_timeout)
-##            if response.status_code == 429:
-##                sleepTime = int(response.headers["Retry-After"])+1
-##                SleepAndPrintTime(sleepTime)
-##            else:
-##                break
-##    except requests.exceptions.RequestException:
-##        raise
-##
-##    if downloadFile:
-##        return response
-##    
-##    try:
-##        response.raise_for_status()
-##        resp = response.json()
-##    except Exception as e:
-##        raise
-##    
-##    return resp
-##
-
-def api_url_params(url, params, api_url_has_params=False):
-    '''
-    Add params to the url
-    '''
-    if params:
-        # if api_url contains already params and there is already a '?' avoid
-        # adding second '?' (api_url += '&' if '?' in api_url else '?'); causes
-        # issues with request parametes (usually for endpoints with required
-        # arguments passed as parameters)
-        url += '&' if api_url_has_params else '?'
-        for key, value in params.items():
-            if type(value) == bool:
-                value = str(value).lower()
-
-            url += "{0}={1}&".format(key, value)
-        url = url[:-1]
-    return url
 
 
 def convertTimestamp(ts, ms=False):
@@ -184,7 +117,7 @@ def getPrice(req, coins, currencies, **kwargs):
     kwargs['vs_currencies'] = currencies
         
     url = "https://api.coingecko.com/api/v3/simple/price"
-    url = api_url_params(url, kwargs)
+    url = req.api_url_params(url, kwargs)
     resp = req.getRequestResponse(url)
     
     # convert timestamp to date
@@ -208,7 +141,7 @@ def getTokenPrice(req, chain, contracts, currencies, **kwargs):
     kwargs['vs_currencies'] = currencies
         
     url = "https://api.coingecko.com/api/v3/simple/token_price/"+chain
-    url = api_url_params(url, kwargs)
+    url = req.api_url_params(url, kwargs)
     resp = req.getRequestResponse(url)
     
     # convert timestamp to date
@@ -250,7 +183,7 @@ def getTokenPriceHistory(req, chain, coins_contracts, currencies, date):
             url = "https://api.coingecko.com/api/v3/coins/"+coin_contract+"/market_chart/range"
         else:
             url = "https://api.coingecko.com/api/v3/coins/"+chain+"/contract/"+coin_contract+"/market_chart/range"
-        url = api_url_params(url, params)
+        url = req.api_url_params(url, params)
         resp = req.getRequestResponse(url)
         price = resp['prices']
 

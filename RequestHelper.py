@@ -58,6 +58,25 @@ class RequestHelper():
         return resp
 
 
+    def api_url_params(self, url, params, api_url_has_params=False):
+        '''
+        Add params to the url
+        '''
+        if params:
+            # if api_url contains already params and there is already a '?' avoid
+            # adding second '?' (api_url += '&' if '?' in api_url else '?'); causes
+            # issues with request parametes (usually for endpoints with required
+            # arguments passed as parameters)
+            url += '&' if api_url_has_params else '?'
+            for key, value in params.items():
+                if type(value) == bool:
+                    value = str(value).lower()
+
+                url += "{0}={1}&".format(key, value)
+            url = url[:-1]
+        return url
+
+
     def SleepAndPrintTime(self, sleepingTime):
         '''
         Sleep and print countdown timer
