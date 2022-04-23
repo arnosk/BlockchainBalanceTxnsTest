@@ -28,8 +28,8 @@ class RequestHelper():
         return session
 
 
-    def updateHeader(self, dict:{}):
-        self.session.headers.update(dict)
+    def updateHeader(self, params:{}):
+        self.session.headers.update(params)
         
 
     def getRequestResponse(self, url, downloadFile = False):
@@ -59,6 +59,8 @@ class RequestHelper():
             resp = response.json()
         except Exception as e:
             raise
+
+        resp['status_code'] = response.status_code
         
         return resp
 
