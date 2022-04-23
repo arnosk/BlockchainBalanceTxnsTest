@@ -27,6 +27,11 @@ class RequestHelper():
         session.mount('http://', HTTPAdapter(max_retries=retries))
         return session
 
+
+    def updateHeader(self, dict:{})
+        self.session.headers.update(dict)
+        
+
     def getRequestResponse(self, url, downloadFile = False):
         '''
         general request url function 
