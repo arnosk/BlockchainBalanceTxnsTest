@@ -28,7 +28,7 @@ class RequestHelper():
         return session
 
 
-    def updateHeader(self, dict:{})
+    def updateHeader(self, dict:{}):
         self.session.headers.update(dict)
         
 
