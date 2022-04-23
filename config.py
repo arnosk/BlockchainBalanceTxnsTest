@@ -28,7 +28,7 @@ MORALIS_NODE_KEY = '' # Your Moralis Node Key
 MORALIS_HTTP_PROVIDER = 'https://speedy-nodes-nyc.moralis.io/'
 
 CRYPTOWATCH_API = '' # Your Cryptowat.ch API
-CRYPTOWATCH_URL = 'https://api.cryptowat.ch/'
+CRYPTOWATCH_URL = 'https://api.cryptowat.ch'
 
 # minimal ABI
 ERC20_ABI = [
