@@ -5,6 +5,8 @@ Created on Mar 29, 2022
 
 Coingecko search
 Search id for coins to finally get price from coingecko
+Search if coin already is in database
+Put choosen coin in database and downloads coin image
 
 Response is a dictionary with keys
 coins, exchanges, icos, categories, nfts
