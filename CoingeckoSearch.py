@@ -24,7 +24,7 @@ the key coins has a list of the search result of coins
   ],
   "exchanges": [] ...
 '''
-import pandas as ps
+import pandas as pd
 import argparse
 import sys
 import RequestHelper
@@ -107,7 +107,7 @@ def search(req, db, coinSearch):
     User can select a row number, from the table of search results
     To add that coin to the coins table, if it doesn't already exists
     '''
-    ps.set_option("display.max_colwidth", 20)
+    pd.set_option("display.max_colwidth", 20)
 
     # Check if coin already in database and add to search result on row 0
     dbResult = []
@@ -116,13 +116,13 @@ def search(req, db, coinSearch):
         dbResult = db.query("SELECT * FROM coins WHERE coingeckoid like ? or name like ? or symbol like ?", \
                             (coinSearchStr, coinSearchStr, coinSearchStr))
         if (len(dbResult) > 0):
-            dbResultdf = ps.DataFrame(dbResult)
+            dbResultdf = pd.DataFrame(dbResult)
             print("Search in database:")
             print(dbResultdf)
 
     # Do search on coingecko
     cgResult = searchId(req, coinSearch)
-    cgResultdf = ps.DataFrame(cgResult)
+    cgResultdf = pd.DataFrame(cgResult)
     print("Search from coingecko:")
     print(cgResultdf)
     
