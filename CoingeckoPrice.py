@@ -45,11 +45,12 @@ def convertTimestampLastUpdated(resp):
     '''
     Convert LastUpdated field in dictonary from timestamp to date
     '''
-    key = 'last_updated_at'
+    keyLastUpdated = 'last_updated_at'
     for v in resp.values():
-        if key in v.keys():
-            ts = v[key]
-            v.update({key:convertTimestamp(ts, False)})
+        if v is dict:
+            if keyLastUpdated in v.keys():
+                ts = v[keyLastUpdated]
+                v.update({keyLastUpdated:convertTimestamp(ts, False)})
     return resp
 
 
@@ -162,7 +163,7 @@ def getTokenPriceHistory(req, chain, coins_contracts, currencies, date):
         currencies = currencies[0]
 
     # convert date to unix timestamp
-    dt = parser.parse(date)
+    dt = parser.parse(date) # local time
     ts = int(dt.timestamp())
     
     # make parameters
@@ -230,8 +231,8 @@ def __main__():
     req = RequestHelper.RequestHelper()
     
     # check if database and table coins exists and has values
-    db = DbHelper.DbHelper(config.DB_CONFIG, config.DB_TYPE)
-    dbExist = db.checkDb(table_name = 'coins')
+    db = DbHelper.DbHelperArko(config.DB_CONFIG, config.DB_TYPE)
+    dbExist = db.checkDb(table_name = db.table['coinCoingecko'])
     print('Database and table coins exist: %s'%dbExist)
     
     # Determine which coins to retrieve prices for
@@ -239,7 +240,7 @@ def __main__():
     if coinStr != None:
         coins = re.split('[;,]', coinStr)
     elif dbExist:
-        coins = db.query("SELECT coingeckoid FROM coins")
+        coins = db.query("SELECT coingeckoid FROM {}".format(db.table['coinCoingecko']))
         coins = [i[0] for i in coins]
     else:
         coins = ["bitcoin","litecoin","cardano","solana","ardor","proton"]

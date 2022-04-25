@@ -89,8 +89,8 @@ def insertCoin(req, db, params):
     '''
     safeFile(req, params['thumb'], "CoinImages", "coingecko_%s_%s.png"%(params['id'],"thumb"))    
     safeFile(req, params['large'], "CoinImages", "coingecko_%s_%s.png"%(params['id'],"large"))    
-    query = "INSERT INTO coins (coingeckoid, name, symbol) " \
-            "VALUES(?,?,?)"
+    query = "INSERT INTO {} (coingeckoid, name, symbol) " \
+            "VALUES(?,?,?)".format(db.table['coinCoingecko'])
     args = (params['id'], params['name'], params['symbol'])
     db.execute(query, args)
     db.commit()
@@ -111,9 +111,9 @@ def search(req, db, coinSearch):
 
     # Check if coin already in database and add to search result on row 0
     dbResult = []
-    if db.checkTable['coins']:
+    if db.checkTable(db.table['coinCoingecko']):
         coinSearchStr = "%{}%".format(coinSearch)
-        dbResult = db.query("SELECT * FROM coins WHERE coingeckoid like ? or name like ? or symbol like ?", \
+        dbResult = db.query("SELECT * FROM {} WHERE coingeckoid like ? or name like ? or symbol like ?".format(db.table['coinCoingecko']), \
                             (coinSearchStr, coinSearchStr, coinSearchStr))
         if (len(dbResult) > 0):
             dbResultdf = pd.DataFrame(dbResult)
@@ -152,11 +152,11 @@ def search(req, db, coinSearch):
         # check if coingecko id is already in our database
         if db.hasConnection():
             # if table doesn't exist, create table coins
-            if not db.checkTable['coins']:
-                db.createTable("coins")
-                db.checkTable['coins'] = True
+            if not db.checkTable(db.table['coinCoingecko']):
+                db.createTable(db.table['coinCoingecko'])
+                db.chkTable[db.table['coinCoingecko']] = True
             
-            dbResult = db.query("SELECT * FROM coins WHERE coingeckoid='%s'"%(coin['id']))
+            dbResult = db.query("SELECT * FROM %s WHERE coingeckoid='%s'"%(db.table['coinCoingecko'], coin['id']))
             if len(dbResult):
                 print("Database already has a row with the coin %s"%(coin['id']))
             else:
@@ -176,7 +176,7 @@ def __main__():
     dbExist = db.checkDb()
     print("Database exists:", dbExist)
     print("Database exists:", db.hasConnection())
-    dbTableExist = db.checkDb(table_name = 'coins')
+    dbTableExist = db.checkDb(table_name = db.table['coinCoingecko'])
     print("Table coins exist:", dbTableExist)
 
     while True:

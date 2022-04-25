@@ -48,7 +48,7 @@ class DbHelper():
     def __init__(self, config:dict, db_type:str):
         self.conn = None
         self.config = config
-        self.checkTable = {}
+        self.chkTable = {}
         db_type = db_type.lower()
         if DbType.hasMember(db_type):
             self.db_type = DbType[db_type]
@@ -112,6 +112,7 @@ class DbHelper():
         else:
             raise RuntimeError('Database connection already exists')
 
+
     def checkDb(self, table_name: str = None):
         '''
         Check wether the database exists and can be found
@@ -145,9 +146,22 @@ class DbHelper():
                 check = True
 
         if table_name is not None:
-            self.checkTable[table_name] = check
+            self.chkTable[table_name] = check
 
         return check
+
+
+    def checkTable(self, table_name):
+        '''
+        Check wether the a table exists
+        Uses a query or a memory field if already queried
+        '''
+        if table_name in self.chkTable:
+            return self.chkTable[table_name]
+        else:
+            return self.checkDb(table_name)
+        
+
 
     def execute(self, sql: str, params: [] = None) -> int:
         '''
@@ -200,6 +214,8 @@ class DbHelperArko(DbHelper):
     With special features/functions for Arko program
     '''
     def __init__(self, config:dict, db_type:str):
+        self.table = {'coinCoingecko':'coinCoingecko',
+                      'coinCryptowatch':'coinCryptowatch'}
         super().__init__(config, db_type)
 
     def createTable(self, table_name: str):
@@ -214,13 +230,23 @@ class DbHelperArko(DbHelper):
         else:
             primarykey = "INT AUTO_INCREMENT PRIMARY KEY"
 
-        query = '''CREATE TABLE coins (
-                    id {},
-                    coingeckoid VARCHAR(80),
-                    name VARCHAR(80) NOT NULL,
-                    symbol VARCHAR(40) NOT NULL
-                    )
-                '''.format(primarykey)
+        query = ""
+        if table_name == self.table['coinCoingecko']: 
+            query = '''CREATE TABLE {} (
+                        id {},
+                        coingeckoid VARCHAR(80),
+                        name VARCHAR(80) NOT NULL,
+                        symbol VARCHAR(40) NOT NULL
+                        )
+                    '''.format(table_name, primarykey)
+        elif table_name == self.table['coinCryptowatch']: 
+            query = '''CREATE TABLE {} (
+                        id {},
+                        name VARCHAR(80) NOT NULL,
+                        symbol VARCHAR(40) NOT NULL
+                        )
+                    '''.format(table_name, primarykey)
+            
         self.execute(query)
 
 
