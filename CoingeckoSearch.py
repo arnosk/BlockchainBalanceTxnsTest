@@ -113,7 +113,12 @@ def search(req, db, coinSearch):
     dbResult = []
     if db.checkTable(db.table['coinCoingecko']):
         coinSearchStr = "%{}%".format(coinSearch)
-        dbResult = db.query("SELECT * FROM {} WHERE coingeckoid like ? or name like ? or symbol like ?".format(db.table['coinCoingecko']), \
+        coinSearchQuery = '''SELECT * FROM {} WHERE
+                                coingeckoid like ? or
+                                name like ? or
+                                symbol like ?
+                          '''.format(db.table['coinCoingecko'])
+        dbResult = db.query(coinSearchQuery, \
                             (coinSearchStr, coinSearchStr, coinSearchStr))
         if (len(dbResult) > 0):
             dbResultdf = pd.DataFrame(dbResult)
@@ -156,7 +161,8 @@ def search(req, db, coinSearch):
                 db.createTable(db.table['coinCoingecko'])
                 db.chkTable[db.table['coinCoingecko']] = True
             
-            dbResult = db.query("SELECT * FROM %s WHERE coingeckoid='%s'"%(db.table['coinCoingecko'], coin['id']))
+            dbResult = db.query("SELECT * FROM %s WHERE coingeckoid='%s'"%
+                                (db.table['coinCoingecko'], coin['id']))
             if len(dbResult):
                 print("Database already has a row with the coin %s"%(coin['id']))
             else:
