@@ -71,7 +71,8 @@ class DbHelper():
     def open(self, create = True):
         '''
         Function to open a connection to the database
-        For SQLite: When create is True it creates a new database when it doesnot exists
+
+        create = For SQLite: When create is True it creates a new database when it doesnot exists
         '''
         if not self.conn:
             if self.db_type == DbType.sqlite:
@@ -117,6 +118,9 @@ class DbHelper():
         '''
         Check wether the database exists and can be found
         If provided with a table_name also check if this table is already created
+
+        table_name = string with a name of a table to check if it iexists in database
+                     if None table check is skipped
         '''
         check = False
 
@@ -155,6 +159,8 @@ class DbHelper():
         '''
         Check wether the a table exists
         Uses a query or a memory field if already queried
+
+        table_name = string with a name of a table to check if it iexists in database
         '''
         if table_name in self.chkTable:
             return self.chkTable[table_name]
@@ -167,6 +173,10 @@ class DbHelper():
         '''
         Executes a query and returns number of rows or number of changes
         For SQLite cursor.rowcount doesn't exists
+
+        sql = query to execute,
+        params = dictionary for parameters in query
+        return value = rowcount or total changes
         '''
         print("Execute:", sql, params)
         cursor = self.conn.cursor()
@@ -184,6 +194,10 @@ class DbHelper():
     def query(self, sql: str, params: [] = None) -> []:
         '''
         Executes a query and returns the result
+
+        sql = query to execute,
+        params = dictionary for parameters in query
+        return value = fetched data from query
         '''
         print("Query:", sql, params)
         cursor = self.conn.cursor()
@@ -221,7 +235,9 @@ class DbHelperArko(DbHelper):
     def createTable(self, table_name: str):
         '''
         Create a new table
-        For now only coins table
+
+        table_name = table to create
+                     (must exist in table list)
         '''
         if self.db_type == DbType.postgresql:
             primarykey = "SERIAL PRIMARY KEY"

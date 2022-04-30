@@ -32,6 +32,7 @@ def showProgress(nr, total):
 def convertTimestamp(ts, ms=False):
     '''
     convert timestamp to date string
+    
     ts = timestamp in sec if ms = False
     ts = timestamp in msec if ms = True
     '''
@@ -44,6 +45,8 @@ def convertTimestamp(ts, ms=False):
 def convertTimestampLastUpdated(resp):
     '''
     Convert LastUpdated field in dictonary from timestamp to date
+
+    resp = a list of dictionaries with history data from Coingecko
     '''
     keyLastUpdated = 'last_updated_at'
     for v in resp.values():
@@ -54,32 +57,47 @@ def convertTimestampLastUpdated(resp):
     return resp
 
 
-def writeToFile(df, outputCSV, outputXLS, extension):
+def writeToFile(df, outputCSV, outputXLS, suffix):
     '''
     Write a dataframe to a csv file and/or excel file
+
+    df = DataFrame to write to file
+    outputCSV = path + base filename for csv output file
+    outputXLS = path + base filename for xlsx output file
+    suffix = last part of filename
+
+    filename CSV file = outputCSV+suffix.csv
+    filename XLS file = outputXLS+suffix.xlsx
     '''
     if outputCSV is not None:
-        filepath = Path('%s%s.csv'%(outputCSV, extension))  
+        filepath = Path('%s%s.csv'%(outputCSV, suffix))  
         filepath.parent.mkdir(parents=True, exist_ok=True)  
         df.to_csv(filepath)
         print("File written: %s"%(filepath))
 
     if outputXLS is not None:
-        filepath = Path('%s%s.xlsx'%(outputXLS, extension))  
+        filepath = Path('%s%s.xlsx'%(outputXLS, suffix))  
         filepath.parent.mkdir(parents=True, exist_ok=True)  
         df.to_excel(filepath)
         print("File written: %s"%(filepath))
     
 
-def getPriceHistory(req, coins, currencies, date):
+def getPriceHistory(req, coins, curr, date):
     '''
     Get coingecko history price
     one price per day, not suitable for tax in Netherlands on 31-12-20xx 23:00
     coins can be a list of strings or a single string
     Thumbnail image is available
+
+    req = instance of RequestHelper
+    coins = one string or list of strings with assets for market base
+    curr = one string or list of strings with assets for market quote
+    date = historical date 
     '''
     if not isinstance(coins, list):
         coins = [coins]
+    if not isinstance(curr, list):
+        curr = [curr]
 
     # set date in correct format for url call
     dt = parser.parse(date)
@@ -95,27 +113,32 @@ def getPriceHistory(req, coins, currencies, date):
         #print("price of "+coin+" "+date+": ", resp['market_data']['current_price'][currency],currency)
         #print("MarketCap of "+coin+" "+date+": ", resp['market_data']['market_cap'][currency],currency)
         price = {}
-        for c in currencies:
+        for c in curr:
             price[c] = resp['market_data']['current_price'][c]
         prices[coin] = price
         
     return prices
 
 
-def getPrice(req, coins, currencies, **kwargs):
+def getPrice(req, coins, curr, **kwargs):
     '''
     Get coingecko current price
     Thumbnail image is available
+
+    req = instance of RequestHelper
+    coins = one string or list of strings with assets for market base
+    curr = one string or list of strings with assets for market quote
+    **kwargs = extra arguments in url 
     '''
     # convert list to comma-separated string
     if isinstance(coins, list):
         coins = ','.join(coins)
-    if isinstance(currencies, list):
-        currencies = ','.join(currencies)
+    if isinstance(curr, list):
+        curr = ','.join(curr)
         
     # make parameters
     kwargs['ids'] = coins
-    kwargs['vs_currencies'] = currencies
+    kwargs['vs_currencies'] = curr
         
     url = "https://api.coingecko.com/api/v3/simple/price"
     url = req.api_url_params(url, kwargs)
@@ -127,19 +150,25 @@ def getPrice(req, coins, currencies, **kwargs):
     return resp
 
 
-def getTokenPrice(req, chain, contracts, currencies, **kwargs):
+def getTokenPrice(req, chain, contracts, curr, **kwargs):
     '''
     Get coingecko current price of a token
+
+    req = instance of RequestHelper
+    chain = chain where contracts are
+    contracts = one string or list of strings with token contracts for market base
+    curr = one string or list of strings with assets for market quote
+    **kwargs = extra arguments in url 
     '''
     # convert list to comma-separated string
     if isinstance(contracts, list):
         contracts = ','.join(contracts)
-    if isinstance(currencies, list):
-        currencies = ','.join(currencies)
+    if isinstance(curr, list):
+        curr = ','.join(curr)
         
     # make parameters
     kwargs['contract_addresses'] = contracts
-    kwargs['vs_currencies'] = currencies
+    kwargs['vs_currencies'] = curr
         
     url = "https://api.coingecko.com/api/v3/simple/token_price/"+chain
     url = req.api_url_params(url, kwargs)
@@ -151,16 +180,23 @@ def getTokenPrice(req, chain, contracts, currencies, **kwargs):
     return resp
 
 
-def getTokenPriceHistory(req, chain, coins_contracts, currencies, date):
+def getTokenPriceHistory(req, chain, coins_contracts, curr, date):
     '''
     Get coingecko history price of a coin or a token
     coins_contracts can be a list of strings or a single string
     If chain = "none" or None search for a coins otherwise search for token contracts
+
+    req = instance of RequestHelper
+    chain = chain where contracts are or None for coins search
+    coins_contracts = one string or list of strings with assets or token contracts for market base
+    curr = one string or list of strings with assets for market quote
+>>>           (if list only first currency will be used)
+    date = historical date 
     '''
     if not isinstance(coins_contracts, list):
         contracts = [coins_contracts]
-    if isinstance(currencies, list):
-        currencies = currencies[0]
+    if isinstance(curr, list):
+        curr = curr[0]
 
     # convert date to unix timestamp
     dt = parser.parse(date) # local time
@@ -168,7 +204,7 @@ def getTokenPriceHistory(req, chain, coins_contracts, currencies, date):
     
     # make parameters
     params = {}
-    params['vs_currency'] = currencies
+    params['vs_currency'] = curr
     params['from'] = ts
     params['to'] = ts+3600
 
@@ -220,7 +256,7 @@ def __main__():
     coinStr = args.coin
     outputCSV = args.outputCSV
     outputXLS = args.outputXLS
-    currentDate = datetime.now().strftime("%Y%m%d-%H%M")
+    currentDate = datetime.now().strftime("%Y-%m-%d %H:%M")
     print("Current date:", currentDate)
     
     # init pandas displaying

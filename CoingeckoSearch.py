@@ -25,6 +25,7 @@ the key coins has a list of the search result of coins
   "exchanges": [] ...
 '''
 import pandas as pd
+import cfscrape
 import argparse
 import sys
 import RequestHelper
@@ -37,6 +38,9 @@ import os
 def searchId(req, searchStr):
     '''
     Search request to Coingecko
+
+    req = instance of RequestHelper
+    searchStr = string to search in assets
     '''
     url = "https://api.coingecko.com/api/v3/search?query="+searchStr
     resp = req.getRequestResponse(url)
@@ -44,9 +48,13 @@ def searchId(req, searchStr):
     return resCoins
 
 
-def inputNumber(message: str, min: int = 1, max: int = 1):
+def inputNumber(message: str, minimal: int = 1, maximum: int = 1):
     '''
     UI for asking row number
+
+    message = string for printing on screen to ask for user input
+    minimal = minimal allowed integer
+    maximum = maximum allowed integer
     '''
     while True:
         userInput = input(message)
@@ -62,38 +70,104 @@ def inputNumber(message: str, min: int = 1, max: int = 1):
                 print("No correct input! Try again.")
                 continue
             else:
-                if (userInput < min or userInput > max):
+                if (userInput < minimal or userInput > maximum):
                     print("No correct row number! Try again.")
                     continue
         return userInput 
         break
 
 
-def safeFile(req, url, folder, filename):
+def saveFile(req, url, folder, filename):
     '''
     Download and safe a file from internet
     If folder doesn't exists, create the folder
+
+    req = instance of RequestHelper
+    url = url to download file
+    folder = folder for saving downloaded file
+    filename = filename for saving downloaded file
     '''
     os.makedirs(folder, exist_ok=True)
+
+    url = url.split("?")[0]
+    ext = url.split(".")[-1]
+    file = "%s\%s.%s"%(folder, filename, ext)
+       
+    scraper = cfscrape.create_scraper()
+    cfurl = scraper.get(url).content
+    
+    with open(file, 'wb') as f:
+        f.write(cfurl)
         
-    r = req.getRequestResponse(url, downloadFile=True)
-    file = "%s\%s"%(folder,filename)
-    print("Saving file from url: %s as file: %s"%(url, file))
-    open(file, 'wb').write(r.content)
+    '''
+    r = req.getRequestResponse(url, downloadFile=True, stream=True)
+    if r.ok:
+        print("Saving file from url: %s as file: %s"%(url, file))
+        with open(file, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=1024 * 8):
+                if chunk:
+                    f.write(chunk)
+                    f.flush()
+                    os.fsync(f.fileno())
+    else:  # HTTP status code 4XX/5XX
+        print("Download failed: status code {}\n{}".format(r.status_code, r.text))
+    '''
+    
 
 
 def insertCoin(req, db, params):
     '''
     Insert a new coin to the coins table
     And download the thumb and large picture of the coin
+
+    req = instance of RequestHelper
+    db = instance of DbHelperArko
+    params = dictionary with retrieved coin info from coingecko
+            {'id': 'dogecoin',
+             'name': 'Dogecoin',
+             'symbol': 'DOGE',
+             'market_cap_rank': 10,
+             'thumb': 'https://assets.coingecko.com/coins/images/5/thumb/dogecoin.png',
+             'large': 'https://assets.coingecko.com/coins/images/5/large/dogecoin.png'
+            }
     '''
-    safeFile(req, params['thumb'], "CoinImages", "coingecko_%s_%s.png"%(params['id'],"thumb"))    
-    safeFile(req, params['large'], "CoinImages", "coingecko_%s_%s.png"%(params['id'],"large"))    
+    saveFile(req, params['thumb'], "CoinImages", "coingecko_%s_%s"%(params['id'],"thumb"))    
+    saveFile(req, params['large'], "CoinImages", "coingecko_%s_%s"%(params['id'],"large"))    
     query = "INSERT INTO {} (coingeckoid, name, symbol) " \
             "VALUES(?,?,?)".format(db.table['coinCoingecko'])
     args = (params['id'], params['name'], params['symbol'])
     db.execute(query, args)
     db.commit()
+
+
+def downloadAllImages(req, db):
+    '''
+    Download image files for all coins in database from Coingecko
+
+    req = instance of RequestHelper
+    db = instance of DbHelperArko
+    '''
+    # Get all coingeckoid's from database
+    coins = db.query("SELECT coingeckoid FROM {}".format(db.table['coinCoingecko']))
+    coins = [i[0] for i in coins]
+    
+    # Retrieve coin info from coingecko
+    for c in coins:
+        url = '''https://api.coingecko.com/api/v3/coins/{}?
+                 localization=false&
+                 tickers=false&
+                 market_data=false&
+                 community_data=false&
+                 developer_data=false&
+                 sparkline=false
+              '''.format(c)
+        resp = req.getRequestResponse(url)
+        paramsImage = resp['image']
+
+        # Save image files
+        saveFile(req, paramsImage['thumb'], "CoinImages", "coingecko_%s_%s"%(c,"thumb"))    
+        saveFile(req, paramsImage['small'], "CoinImages", "coingecko_%s_%s"%(c,"small"))    
+        saveFile(req, paramsImage['large'], "CoinImages", "coingecko_%s_%s"%(c,"large"))    
 
 
 def search(req, db, coinSearch):
@@ -106,6 +180,10 @@ def search(req, db, coinSearch):
     
     User can select a row number, from the table of search results
     To add that coin to the coins table, if it doesn't already exists
+
+    req = instance of RequestHelper
+    db = instance of DbHelperArko
+    coinSearch = string to search in assets
     '''
     pd.set_option("display.max_colwidth", 20)
 
@@ -171,8 +249,16 @@ def search(req, db, coinSearch):
                 
 
 def __main__():
+    '''
+    Get Coingecko search assets and store in databse
+
+    Arguments:
+    - coin to search
+    - image, save image file for all coins in database
+    '''
     argparser = argparse.ArgumentParser()
     argparser.add_argument('-c', '--coin', type=str, help='Coin name to search on Coingecko')
+    argparser.add_argument('-i', '--image', action='store_true', help='Save image file for all coins in database')
     args = argparser.parse_args()
     coinSearch = args.coin
 
@@ -185,11 +271,17 @@ def __main__():
     dbTableExist = db.checkDb(table_name = db.table['coinCoingecko'])
     print("Table coins exist:", dbTableExist)
 
-    while True:
-        if coinSearch == None:
-            coinSearch = input("Search for coin: ")
-        search(req, db, coinSearch)
-        coinSearch = None
+    if args.image:
+        if dbTableExist:
+            downloadAllImages(req, db)
+        else:
+            print("No database, exiting")
+    else:
+        while True:
+            if coinSearch == None:
+                coinSearch = input("Search for coin: ")
+            search(req, db, coinSearch)
+            coinSearch = None
 
 if __name__=='__main__':
     __main__()

@@ -21,34 +21,55 @@ class RequestHelper():
 
     @staticmethod
     def _init_session():       
+        '''
+        Initialization of the session 
+        '''
         session = requests.Session()
-        session.headers.update({'Accept': 'application/json'})
-        retries = Retry(total=5, backoff_factor=0.5, status_forcelist=[502, 503, 504])
-        session.mount('http://', HTTPAdapter(max_retries=retries))
+        #session.headers.update({'Accept': 'application/json'})
+        retry = Retry(total=5, backoff_factor=1.5, 
+                      respect_retry_after_header=True, 
+                      status_forcelist=[502, 503, 504])
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
         return session
 
 
-    def updateHeader(self, params:{}):
+    def updateHeader(self, params:dict):
+        '''
+        Update the header of the session 
+
+        params = dictionary with parameters for the header
+        '''
         self.session.headers.update(params)
         
 
-    def getRequestResponse(self, url, downloadFile = False):
+    def getRequestResponse(self, url, downloadFile = False, stream=False):
         '''
         general request url function 
         should be a class, with _init etc
+
+        url = api url for request
+        downloadFile = request is for downloading a file
+                       (no convertion to json)
         '''
         resp = []
         request_timeout = 120
 
         try:
             while True:
-                response = self.session.get(url, timeout=request_timeout)
+                response = self.session.get(url, timeout=request_timeout, stream=stream)
+                print("Request url status code:", response.status_code)
                 if response.status_code == 429:
                     sleepTime = int(response.headers["Retry-After"])+1
                     self.SleepAndPrintTime(sleepTime)
                 else:
                     break
         except requests.exceptions.RequestException:
+            print("Header request exception:", response.headers)
+            raise
+        except Exception:
+            print("Header exception:", response.headers)
             raise
 
         if downloadFile:
@@ -65,9 +86,13 @@ class RequestHelper():
         return resp
 
 
-    def api_url_params(self, url, params, api_url_has_params=False):
+    def api_url_params(self, url, params:dict, api_url_has_params=False):
         '''
         Add params to the url
+
+        url = url to be extended with parameters
+        params = dictionary of parameters
+        api_url_has_params = bool to extend url with '?' or '&'
         '''
         if params:
             # if api_url contains already params and there is already a '?' avoid
@@ -87,7 +112,9 @@ class RequestHelper():
     def SleepAndPrintTime(self, sleepingTime):
         '''
         Sleep and print countdown timer
-        Used for a 429 response retry-aftero
+        Used for a 429 response retry-after
+
+        sleepingTime = total time to sleep in seconds
         '''
         print()
         print("Retrying in %s s"%(sleepingTime))
