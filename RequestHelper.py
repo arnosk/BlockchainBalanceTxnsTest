@@ -69,11 +69,11 @@ class RequestHelper():
                     break
         except requests.exceptions.RequestException:
             print("Header request exception:", response.headers)
-            print(response.json())
+            print(response.text)
             raise
         except Exception:
             print("Header exception:", response.headers)
-            print(response.json())
+            print(response.text)
             raise
 
         if downloadFile:

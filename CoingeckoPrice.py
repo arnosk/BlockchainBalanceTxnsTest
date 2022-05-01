@@ -301,14 +301,6 @@ def __main__():
     chain = "binance-smart-chain"
     contracts = ["0x62858686119135cc00C4A3102b436a0eB314D402","0xacfc95585d80ab62f67a14c566c1b7a49fe91167"]
     
-    print("* Current price of token")
-    price = getTokenPrice(req, chain, contracts, curr)
-    df = pd.DataFrame(price).transpose()
-    df = df.sort_index(key=lambda x: x.str.lower())
-    print()
-    print(df)
-    sys.exit()
-
     print("* Current price of coins")
     price = getPrice(req, coins, curr)
     df = pd.DataFrame(price).transpose()
