@@ -246,7 +246,28 @@ def search(req, db, coinSearch):
             else:
                 # add new row to table coins
                 insertCoin(req, db, coin)
-                
+
+
+def getAllAssets(req):
+    '''
+    Get all assets from Coingecko
+
+    req = instance of RequestHelper
+    result = {
+        {"id": "astroelon",
+         "symbol": "elonone",
+         "name": "AstroElon",
+         "platforms": {
+             "ethereum": "0x..."
+             }
+        },...
+    }
+    '''
+    urlList = "https://api.coingecko.com/api/v3/coins/list?include_platform=true"
+    resp = req.getRequestResponse(urlList)
+    assets = resp['result']
+    return assets    
+
 
 def __main__():
     '''

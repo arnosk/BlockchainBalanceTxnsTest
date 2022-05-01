@@ -50,7 +50,7 @@ def convertTimestampLastUpdated(resp):
     '''
     keyLastUpdated = 'last_updated_at'
     for v in resp.values():
-        if v is dict:
+        if isinstance(v, dict):
             if keyLastUpdated in v.keys():
                 ts = v[keyLastUpdated]
                 v.update({keyLastUpdated:convertTimestamp(ts, False)})
@@ -69,6 +69,7 @@ def writeToFile(df, outputCSV, outputXLS, suffix):
     filename CSV file = outputCSV+suffix.csv
     filename XLS file = outputXLS+suffix.xlsx
     '''
+    suffix = re.sub('[:;,!@#$%^&*()]', '', suffix)
     if outputCSV is not None:
         filepath = Path('%s%s.csv'%(outputCSV, suffix))  
         filepath.parent.mkdir(parents=True, exist_ok=True)  
@@ -110,11 +111,21 @@ def getPriceHistory(req, coins, curr, date):
         showProgress(i, len(coins))
         url = "https://api.coingecko.com/api/v3/coins/"+coin+"/history?date="+date+"&localization=false"
         resp = req.getRequestResponse(url)
+        market_dataExist = "market_data" in resp
+        #print("coin:", coin)
+        #print("rësonse:", resp)
         #print("price of "+coin+" "+date+": ", resp['market_data']['current_price'][currency],currency)
         #print("MarketCap of "+coin+" "+date+": ", resp['market_data']['market_cap'][currency],currency)
+        # init price
         price = {}
         for c in curr:
-            price[c] = resp['market_data']['current_price'][c]
+            price[c] = "no data"
+
+        for c in curr:
+            if market_dataExist:
+                if c in resp['market_data']['current_price']:
+                    price[c] = resp['market_data']['current_price'][c]
+
         prices[coin] = price
         
     return prices
@@ -139,6 +150,7 @@ def getPrice(req, coins, curr, **kwargs):
     # make parameters
     kwargs['ids'] = coins
     kwargs['vs_currencies'] = curr
+    kwargs['include_last_updated_at'] = True
         
     url = "https://api.coingecko.com/api/v3/simple/price"
     url = req.api_url_params(url, kwargs)
@@ -169,11 +181,15 @@ def getTokenPrice(req, chain, contracts, curr, **kwargs):
     # make parameters
     kwargs['contract_addresses'] = contracts
     kwargs['vs_currencies'] = curr
+    kwargs['include_last_updated_at'] = True
         
     url = "https://api.coingecko.com/api/v3/simple/token_price/"+chain
     url = req.api_url_params(url, kwargs)
     resp = req.getRequestResponse(url)
-    
+
+    # remove status_code from dictionary
+    resp.pop("status_code")
+
     # convert timestamp to date
     resp = convertTimestampLastUpdated(resp)
 
@@ -247,7 +263,7 @@ def __main__():
     - output file for saving results in a csv file
     '''
     argparser = argparse.ArgumentParser()
-    argparser.add_argument('-d', '--date', type=str, help='Historical date to search on Coingecko', default='2022-04-01')
+    argparser.add_argument('-d', '--date', type=str, help='Historical date to search on Coingecko', default='2022-05-01')
     argparser.add_argument('-c', '--coin', type=str, help='List of coins to search on Coingecko')
     argparser.add_argument('-oc', '--outputCSV', type=str, help='Filename and path to output CSV file', required=False)
     argparser.add_argument('-ox', '--outputXLS', type=str, help='Filename and path to the output Excel file', required=False)
@@ -285,8 +301,16 @@ def __main__():
     chain = "binance-smart-chain"
     contracts = ["0x62858686119135cc00C4A3102b436a0eB314D402","0xacfc95585d80ab62f67a14c566c1b7a49fe91167"]
     
+    print("* Current price of token")
+    price = getTokenPrice(req, chain, contracts, curr)
+    df = pd.DataFrame(price).transpose()
+    df = df.sort_index(key=lambda x: x.str.lower())
+    print()
+    print(df)
+    sys.exit()
+
     print("* Current price of coins")
-    price = getPrice(req, coins, curr, include_last_updated_at=True)
+    price = getPrice(req, coins, curr)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
@@ -314,7 +338,7 @@ def __main__():
     print()
       
     print("* Current price of token")
-    price = getTokenPrice(req, chain, contracts, curr, include_last_updated_at=True)
+    price = getTokenPrice(req, chain, contracts, curr)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()

@@ -59,17 +59,21 @@ class RequestHelper():
         try:
             while True:
                 response = self.session.get(url, timeout=request_timeout, stream=stream)
-                print("Request url status code:", response.status_code)
                 if response.status_code == 429:
-                    sleepTime = int(response.headers["Retry-After"])+1
-                    self.SleepAndPrintTime(sleepTime)
+                    if "Retry-After" in response.headers.keys():
+                        sleepTime = int(response.headers["Retry-After"])+1
+                        self.SleepAndPrintTime(sleepTime)
+                    else:
+                        raise requests.exceptions.RequestException
                 else:
                     break
         except requests.exceptions.RequestException:
             print("Header request exception:", response.headers)
+            print(response.json())
             raise
         except Exception:
             print("Header exception:", response.headers)
+            print(response.json())
             raise
 
         if downloadFile:
