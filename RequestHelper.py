@@ -123,8 +123,7 @@ class RequestHelper():
         print()
         print("Retrying in %s s"%(sleepingTime))
         for i in range(sleepingTime,0,-1):
-            sys.stdout.write("{:3d} seconds remaining.\r".format(i))
-            sys.stdout.flush()
+            print("\r{:3d} seconds remaining.".format(i), end="", flush=True)
             time.sleep(1)
         print()
 

@@ -26,8 +26,16 @@ def showProgress(nr, total):
     '''
     Show progress to standard output on one row
     '''
-    sys.stdout.write("Retrieving nr {:3d} of {}\r".format(nr, total))
-    sys.stdout.flush()
+    print("\rRetrieving nr {:3d} of {}".format(nr, total), end='', flush=True)
+    #sys.stdout.write("Retrieving nr {:3d} of {}\r".format(nr, total))
+    #sys.stdout.flush()
+
+
+def showAllowance(allowance):
+    '''
+    Show allowance data to standard output on same row
+    '''
+    print(allowance.rjust(80), end='', flush=True)
 
 
 def convertTimestamp(ts, ms=False):
@@ -160,6 +168,11 @@ def getPrice(req, markets):
                 'price':resp['result']['price']['last'],
                 'volume':resp['result']['volume'],
                 'date':currentDate}]
+        
+        if "allowance" in resp:
+            allowance = resp['allowance']
+            showAllowance(allowance)
+        
         prices.extend(res)
 
     return prices
@@ -173,7 +186,7 @@ def getTokenPriceHistory(req, markets, date):
 
     req = instance of RequestHelper
     markets = all market pairs and exchange to get price
-]    date = historical date 
+    date = historical date 
     '''
     # convert date to unix timestamp
     dt = parser.parse(date) # local time

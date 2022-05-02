@@ -81,7 +81,29 @@ def writeToFile(df, outputCSV, outputXLS, suffix):
         filepath.parent.mkdir(parents=True, exist_ok=True)  
         df.to_excel(filepath)
         print("File written: %s"%(filepath))
-    
+
+
+def addCoinSymbol(db, prices:dict):
+    '''
+    Adds a new column with the symbol name
+    Symbol name is retrieved from the database
+
+    prices = a dictionary with coin id from coingecko and prices
+    '''
+    coins = db.query("SELECT coingeckoid, symbol FROM {}".format(db.table['coinCoingecko']))
+    for priceKey, priceVal in prices.items():
+        print(priceVal, priceKey)
+        if isinstance(priceVal, dict):
+            for coinKey, coinVal in coins:
+                if priceKey == coinKey:
+                    priceVal["symbol"] = coinVal
+        if isinstance(priceVal, list):
+            for coinKey, coinVal in coins:
+                if priceKey == coinKey:
+                    priceVal.append(coinVal)
+
+    return prices
+
 
 def getPriceHistory(req, coins, curr, date):
     '''
@@ -113,11 +135,11 @@ def getPriceHistory(req, coins, curr, date):
         resp = req.getRequestResponse(url)
         market_dataExist = "market_data" in resp
         #print("coin:", coin)
-        #print("rësonse:", resp)
         #print("price of "+coin+" "+date+": ", resp['market_data']['current_price'][currency],currency)
         #print("MarketCap of "+coin+" "+date+": ", resp['market_data']['market_cap'][currency],currency)
         # init price
         price = {}
+        price["symbol"] = resp['symbol']
         for c in curr:
             price[c] = "no data"
 
@@ -156,6 +178,9 @@ def getPrice(req, coins, curr, **kwargs):
     url = req.api_url_params(url, kwargs)
     resp = req.getRequestResponse(url)
     
+    # remove status_code from dictionary
+    resp.pop("status_code")
+
     # convert timestamp to date
     resp = convertTimestampLastUpdated(resp)
 
@@ -296,13 +321,15 @@ def __main__():
         coins = [i[0] for i in coins]
     else:
         coins = ["bitcoin","litecoin","cardano","solana","ardor","proton"]
-        
+
     curr = ["usd","eur","btc","eth"]
     chain = "binance-smart-chain"
     contracts = ["0x62858686119135cc00C4A3102b436a0eB314D402","0xacfc95585d80ab62f67a14c566c1b7a49fe91167"]
     
     print("* Current price of coins")
     price = getPrice(req, coins, curr)
+    if dbExist:
+        price = addCoinSymbol(db, price)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
@@ -322,6 +349,8 @@ def __main__():
  
     print("* History price of coins via market_chart")
     price = getTokenPriceHistory(req, None, coins, curr[0], date)
+    if dbExist:
+        price = addCoinSymbol(db, price)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
