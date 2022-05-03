@@ -36,7 +36,8 @@ def showAllowance(allowance):
     '''
     Show allowance data to standard output on same row
     '''
-    print("\r"+json.dumps(allowance).rjust(80), end='', flush=True)
+    allowanceStr = json.dumps(allowance)[1:50]
+    print("\r"+allowanceStr.rjust(80), end='', flush=True)
 
 
 def convertTimestamp(ts, ms=False):
