@@ -342,7 +342,7 @@ def __main__():
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
-    print(date) #("%s: %s"%(date, price))
+    print(date)
     print(df)
     writeToFile(df, outputCSV, outputXLS, "_hist_%s"%(date))
     print()
