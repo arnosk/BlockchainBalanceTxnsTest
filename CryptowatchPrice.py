@@ -14,6 +14,7 @@ from tracemalloc import reset_peak
 import pandas as pd
 import re
 import openpyxl
+import json
 import DbHelper
 import RequestHelper
 import config
@@ -35,7 +36,7 @@ def showAllowance(allowance):
     '''
     Show allowance data to standard output on same row
     '''
-    print(allowance.rjust(80), end='', flush=True)
+    print("\r"+json.dumps(allowance).rjust(80), end='', flush=True)
 
 
 def convertTimestamp(ts, ms=False):
@@ -174,7 +175,6 @@ def getPrice(req, markets):
             showAllowance(allowance)
         
         prices.extend(res)
-
     return prices
 
 
@@ -228,7 +228,49 @@ def getTokenPriceHistory(req, markets, date):
                     'volume':"no data",
                     'date':"no data"}]
         prices.extend(res)
+
+        if "allowance" in resp:
+            allowance = resp['allowance']
+            showAllowance(allowance)
+        
     return prices
+
+
+def filterMarketPairOnVolume(prices, maxMarketsPerPair):
+    '''
+    Filter the price data with same market pair. 
+    Only the exchanges with the greatest volume for a market pair will stay
+    
+    prices = all prices of market pairs and exchange with volume column
+    maxMarketsPerPair = maximum rows of the same pair on different exchanges
+                        when 0, no filtering will be done and all markets are shown
+    '''
+    # do nothing
+    if maxMarketsPerPair <= 0:
+        return prices
+
+    # make new dictionary, with pair as key, list of price as value
+    pricePerPair = {}
+    for price in prices:
+        if "volume" in price:
+            pair = price["pair"]
+            if not pair in pricePerPair.keys():
+                pricePerPair[pair] = []
+            pricePerPair[pair].append(price)
+    
+    # make new list of prices with max markets per pair
+    newprices = []
+    for valPrices in pricePerPair.values():
+        # sort list of dictionaries of same pair on volume
+        valPricesSorted = sorted(valPrices, 
+                key=lambda d: -1 if isinstance(d['volume'],str) else d['volume'], 
+                reverse=True)
+
+        # get the first x price items
+        for i in range(0, min(len(valPricesSorted), maxMarketsPerPair)):
+            newprices.append(valPricesSorted[i])
+
+    return newprices
 
 
 def __main__():
@@ -239,17 +281,20 @@ def __main__():
     - date for historical prices
     - coin search prices for specfic coin
     - output file for saving results in a csv file
+    - max markets per pair, 0 is no maximum
     '''
     argparser = argparse.ArgumentParser()
     argparser.add_argument('-d', '--date', type=str, help='Historical date to search on Cryptowatch', default='2022-05-01')
     argparser.add_argument('-c', '--coin', type=str, help='List of coins to search on Cryptowatch')
     argparser.add_argument('-oc', '--outputCSV', type=str, help='Filename and path to output CSV file', required=False)
     argparser.add_argument('-ox', '--outputXLS', type=str, help='Filename and path to the output Excel file', required=False)
+    argparser.add_argument('-mp', '--maxMarketsPerPair', type=int, help='Maximum markets per pair, 0 is no max', default=2)
     args = argparser.parse_args()
     date = args.date
     coinStr = args.coin
     outputCSV = args.outputCSV
     outputXLS = args.outputXLS
+    maxMarketsPerPair = args.maxMarketsPerPair
     currentDate = datetime.now().strftime("%Y-%m-%d %H:%M")
     print("Current date:", currentDate)
     
@@ -289,6 +334,7 @@ def __main__():
 
     print("* Current price of coins")
     price = getPrice(req, markets)
+    price = filterMarketPairOnVolume(price, maxMarketsPerPair)
     df = pd.DataFrame(price) #.transpose()
     df = df.sort_values(by=["pair"], key=lambda x: x.str.lower())
     print()
@@ -298,6 +344,7 @@ def __main__():
 
     print("* History price of coins via market_chart")
     price = getTokenPriceHistory(req, markets, date)
+    price = filterMarketPairOnVolume(price, maxMarketsPerPair)
     df = pd.DataFrame(price) #.transpose()
     df = df.sort_values(by=["pair"], key=lambda x: x.str.lower())
     print()
