@@ -6,3 +6,4 @@ pandas
 cfscrape
 psycopg2
 openpyxl
+ccxt
