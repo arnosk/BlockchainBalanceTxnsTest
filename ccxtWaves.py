@@ -9,6 +9,27 @@ CCXT
 '''
 import ccxt
 #import ccxt.async_support as ccxt
+import RequestHelper
+
+
+def testCcxt():
+    print(ccxt.exchanges)
+    we = ccxt.wavesexchange({
+    #    'apiKey': 'YOUR_PUBLIC_KEY'
+    #    'secret': 'YOUR_PRIVATE_KEY',
+    #    'proxy': 'https://crossorigin.me/'
+    })
+
+    markets = we.load_markets()
+    print(markets)
+
+def testApi():
+    # init request helper class
+    req = RequestHelper.RequestHelper()
+    apiUrl = 'https://api.waves.exchange'
+    getUrl = '/v1/platforms'
+    resp = req.getRequestResponse(apiUrl+getUrl)
+    print(resp)
 
 def __main__():
     '''
@@ -19,15 +40,7 @@ def __main__():
     - coin search prices for specfic coin
     - output file for saving results in a csv file
     '''
-    print(ccxt.exchanges)
-    we = ccxt.wavesexchange({
-    #    'apiKey': 'YOUR_PUBLIC_KEY'
-    #    'secret': 'YOUR_PRIVATE_KEY',
-    #    'proxy': 'https://crossorigin.me/'
-    })
-
-    markets = we.load_markets()
-    print(markets)
+    testApi()
 
 
 if __name__=='__main__':
