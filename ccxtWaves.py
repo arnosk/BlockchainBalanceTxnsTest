@@ -11,7 +11,6 @@ import ccxt
 #import ccxt.async_support as ccxt
 import RequestHelper
 
-
 def testCcxt():
     print(ccxt.exchanges)
     we = ccxt.wavesexchange({
