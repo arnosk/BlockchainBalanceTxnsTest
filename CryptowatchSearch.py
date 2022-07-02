@@ -145,7 +145,7 @@ def search(req, db, coinSearch, assets):
 
         # check if database exist, in case of sqlite create database
         if not db.hasConnection():
-            if db.getDbType() == DbType.sqlite:
+            if db.getDbType() == DbHelper.DbType.sqlite:
                 db.open()
             else:
                 print("No database %s, do new search"%db.getDbType())

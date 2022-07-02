@@ -169,7 +169,7 @@ class DbHelper():
         
 
 
-    def execute(self, sql: str, params: [] = None) -> int:
+    def execute(self, sql: str, params = None) -> int:
         '''
         Executes a query and returns number of rows or number of changes
         For SQLite cursor.rowcount doesn't exists
@@ -191,7 +191,7 @@ class DbHelper():
         cursor.close()
         return result
 
-    def query(self, sql: str, params: [] = None) -> []:
+    def query(self, sql: str, params = None):
         '''
         Executes a query and returns the result
 
