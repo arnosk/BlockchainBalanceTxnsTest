@@ -80,12 +80,14 @@ class RequestHelper():
             return response
         
         try:
-            response.raise_for_status()
             resp = response.json()
+            response.raise_for_status()
+            resp['status_code'] = response.status_code
         except Exception as e:
-            raise
-
-        resp['status_code'] = response.status_code
+            print('No status Exception: ', response.json())
+            #raise
+            resp['status_code'] = "error" # response.text
+            resp['prices'] = ""
         
         return resp
 

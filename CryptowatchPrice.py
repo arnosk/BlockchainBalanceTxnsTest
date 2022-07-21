@@ -113,37 +113,49 @@ def getMarkets(req, coins, curr, strictness=0):
     for symbol in coins:
         url = config.CRYPTOWATCH_URL + "/assets/" + symbol
         resp = req.getRequestResponse(url)
-        res = resp['result']['markets']['base']
-        for r in res:
-            r["coin"] = symbol
-            r["curr"] = r["pair"].replace(symbol,"")
 
-        # filter active pairs
-        res = list(filter(lambda r: r['active']==True, res))
+        if resp['status_code'] == 200:
+            res = resp['result']['markets']['base']
+            for r in res:
+                r["coin"] = symbol
+                r["curr"] = r["pair"].replace(symbol,"")
 
-        if strictness == 0:
-            # Strict/Exact filter only quote from currencies
-            res_0 = list(filter(lambda r: r['curr'] in curr, res))
+            # filter active pairs
+            res = list(filter(lambda r: r['active']==True, res))
 
-            # check if markets are found, else don't filter
-            if len(res_0) > 0:
-                res = res_0
+            if strictness == 0:
+                # Strict/Exact filter only quote from currencies
+                res_0 = list(filter(lambda r: r['curr'] in curr, res))
+
+                # check if markets are found, else don't filter
+                if len(res_0) > 0:
+                    res = res_0
 
 
-        if strictness >= 1:
-            # Loose filter only quote from currencies
-            resFilter = []
-            for c in curr:
-                if strictness == 1:
-                    # Loose (quote can have 0 or 1 character before and/or after given currency)
-                    resCurr = list(filter(lambda r: re.match("^"+symbol+"\w?"+c+"\w?$", r['pair']), res))
-                else:
-                    # Very Loose (quote must contain given currency)
-                    resCurr = list(filter(lambda r: c in r['curr'], res))
-                resFilter.extend(resCurr)
-            res = resFilter
+            if strictness >= 1:
+                # Loose filter only quote from currencies
+                resFilter = []
+                for c in curr:
+                    if strictness == 1:
+                        # Loose (quote can have 0 or 1 character before and/or after given currency)
+                        resCurr = list(filter(lambda r: re.match("^"+symbol+"\w?"+c+"\w?$", r['pair']), res))
+                    else:
+                        # Very Loose (quote must contain given currency)
+                        resCurr = list(filter(lambda r: c in r['curr'], res))
+                    resFilter.extend(resCurr)
+                res = resFilter
+
+        else:
+            res = [{'active':False,
+                    'coin':symbol,
+                    'pair':'error',
+                    'curr':'error',
+                    'volume':'error',
+                    'error':resp['error'], 
+                    'route':''}]
         
         markets.extend(res)
+
     return markets
 
 
@@ -161,21 +173,23 @@ def getPrice(req, markets):
         i += 1
         showProgress(i, len(markets))
 
-        urlList = market["route"] + "/summary"
-        resp = req.getRequestResponse(urlList)
-        res = [{'exchange':market["exchange"],
-                'pair':market["pair"],
-                'coin':market["coin"],
-                'curr':market["curr"],
-                'price':resp['result']['price']['last'],
-                'volume':resp['result']['volume'],
-                'date':currentDate}]
-        
-        if "allowance" in resp:
-            allowance = resp['allowance']
-            showAllowance(allowance)
-        
-        prices.extend(res)
+        if not 'error' in market:
+            urlList = market["route"] + "/summary"
+            resp = req.getRequestResponse(urlList)
+            res = [{'exchange':market["exchange"],
+                    'pair':market["pair"],
+                    'coin':market["coin"],
+                    'curr':market["curr"],
+                    'price':resp['result']['price']['last'],
+                    'volume':resp['result']['volume'],
+                    'date':currentDate}]
+            
+            if "allowance" in resp:
+                allowance = resp['allowance']
+                showAllowance(allowance)
+            
+            prices.extend(res)
+
     return prices
 
 
@@ -206,33 +220,45 @@ def getTokenPriceHistory(req, markets, date):
         i += 1
         showProgress(i, len(markets))
 
-        urlList = market["route"] + "/ohlc?periods=3600&after=%s&before=%s"%(ts,ts) 
-        urlList = market["route"] + "/ohlc"
-        urlList = req.api_url_params(urlList, params)
-        resp = req.getRequestResponse(urlList)
-        if len(resp['result']['3600']) > 0:
-            res = [{'exchange':market["exchange"],
-                    'pair':market["pair"],
-                    'coin':market["coin"],
-                    'curr':market["curr"],
-                    'open':resp['result']['3600'][0][1],
-                    'close':resp['result']['3600'][0][4],
-                    'volume':resp['result']['3600'][0][5],
-                    'date':convertTimestamp(resp['result']['3600'][0][0])}]
-        else:
-            res = [{'exchange':market["exchange"],
-                    'pair':market["pair"],
-                    'coin':market["coin"],
-                    'curr':market["curr"],
-                    'open':"no data",
-                    'close':"no data",
-                    'volume':"no data",
-                    'date':"no data"}]
-        prices.extend(res)
+        if not 'error' in market:
+            urlList = market["route"] + "/ohlc?periods=3600&after=%s&before=%s"%(ts,ts) 
+            urlList = market["route"] + "/ohlc"
+            urlList = req.api_url_params(urlList, params)
+            resp = req.getRequestResponse(urlList)
+            if resp['status_code'] == "error":
+                # got no status from request, must be an error
+                res = [{'exchange':market["exchange"],
+                        'pair':market["pair"],
+                        'coin':market["coin"],
+                        'curr':market["curr"],
+                        'open':resp['error'],
+                        'close':"no data",
+                        'volume':"no data",
+                        'date':"no data"}]
+            else:
+                if len(resp['result']['3600']) > 0:
+                    res = [{'exchange':market["exchange"],
+                            'pair':market["pair"],
+                            'coin':market["coin"],
+                            'curr':market["curr"],
+                            'open':resp['result']['3600'][0][1],
+                            'close':resp['result']['3600'][0][4],
+                            'volume':resp['result']['3600'][0][5],
+                            'date':convertTimestamp(resp['result']['3600'][0][0])}]
+                else:
+                    res = [{'exchange':market["exchange"],
+                            'pair':market["pair"],
+                            'coin':market["coin"],
+                            'curr':market["curr"],
+                            'open':"no data",
+                            'close':"no data",
+                            'volume':"no data",
+                            'date':"no data"}]
+            prices.extend(res)
 
-        if "allowance" in resp:
-            allowance = resp['allowance']
-            showAllowance(allowance)
+            if "allowance" in resp:
+                allowance = resp['allowance']
+                showAllowance(allowance)
         
     return prices
 
@@ -247,7 +273,7 @@ def filterMarketPairOnVolume(prices, maxMarketsPerPair):
                         when 0, no filtering will be done and all markets are shown
     '''
     # do nothing
-    if maxMarketsPerPair <= 0:
+    if maxMarketsPerPair <= 0 or len(prices) == 0:
         return prices
 
     # make new dictionary, with pair as key, list of price as value
@@ -336,21 +362,27 @@ def __main__():
     print("* Current price of coins")
     price = getPrice(req, markets)
     price = filterMarketPairOnVolume(price, maxMarketsPerPair)
-    df = pd.DataFrame(price) #.transpose()
-    df = df.sort_values(by=["pair"], key=lambda x: x.str.lower())
     print()
-    print(df)
-    writeToFile(df, outputCSV, outputXLS, "_current_coins_%s"%(currentDate))
+    if len(price) > 0:
+        df = pd.DataFrame(price) #.transpose()
+        df = df.sort_values(by=["pair"], key=lambda x: x.str.lower())
+        print(df)
+        writeToFile(df, outputCSV, outputXLS, "_current_coins_%s"%(currentDate))
+    else:
+        print('No data')
     print()
 
     print("* History price of coins via market_chart")
     price = getTokenPriceHistory(req, markets, date)
     price = filterMarketPairOnVolume(price, maxMarketsPerPair)
-    df = pd.DataFrame(price) #.transpose()
-    df = df.sort_values(by=["pair"], key=lambda x: x.str.lower())
     print()
-    print(df)
-    writeToFile(df, outputCSV, outputXLS, "_hist_marketchart_%s"%(date))
+    if len(price) > 0:
+        df = pd.DataFrame(price) #.transpose()
+        df = df.sort_values(by=["pair"], key=lambda x: x.str.lower())
+        print(df)
+        writeToFile(df, outputCSV, outputXLS, "_hist_marketchart_%s"%(date))
+    else:
+        print('No data')
     print()
       
 

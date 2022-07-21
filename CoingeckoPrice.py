@@ -139,14 +139,19 @@ def getPriceHistory(req, coins, curr, date):
         #print("MarketCap of "+coin+" "+date+": ", resp['market_data']['market_cap'][currency],currency)
         # init price
         price = {}
-        price["symbol"] = resp['symbol']
-        for c in curr:
-            price[c] = "no data"
+        if resp['status_code'] == "error":
+            # got no status from request, must be an error
+            for c in curr:
+                price[c] = resp['error']
+        else:
+            price["symbol"] = resp['symbol']
+            for c in curr:
+                price[c] = "no data"
 
-        for c in curr:
-            if market_dataExist:
-                if c in resp['market_data']['current_price']:
-                    price[c] = resp['market_data']['current_price'][c]
+            for c in curr:
+                if market_dataExist:
+                    if c in resp['market_data']['current_price']:
+                        price[c] = resp['market_data']['current_price'][c]
 
         prices[coin] = price
         
@@ -263,17 +268,21 @@ def getTokenPriceHistory(req, chain, coins_contracts, curr, date):
             url = "https://api.coingecko.com/api/v3/coins/"+chain+"/contract/"+coin_contract+"/market_chart/range"
         url = req.api_url_params(url, params)
         resp = req.getRequestResponse(url)
-        price = resp['prices']
 
-        if (len(price) > 0):
-            # convert timestamp to date
-            for p in price:
-                p[0] = convertTimestamp(p[0], True)
-            
-            prices[coin_contract] = price[0]
+        if resp['status_code'] == "error":
+            # got no status from request, must be an error
+            prices[coin_contract] = [resp['error'], 0]
         else:
-            # no data, set empty record
-            prices[coin_contract] = ['no data', 0]
+            price = resp['prices']
+            if (len(price) > 0):
+                # convert timestamp to date
+                for p in price:
+                    p[0] = convertTimestamp(p[0], True)
+                
+                prices[coin_contract] = price[0]
+            else:
+                # no data, set empty record
+                prices[coin_contract] = ['no data', 0]
         
     return prices
 
