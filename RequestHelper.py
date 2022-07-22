@@ -53,6 +53,11 @@ class RequestHelper():
         downloadFile = request is for downloading a file
                        (no convertion to json)
         '''
+
+        # debug 
+        print('Inside RequestHelper.getRequestResponse')
+        print('URL: ', url)
+
         resp = []
         request_timeout = 120
 
