@@ -25,8 +25,9 @@ def showProgress(nr, total):
     '''
     Show progress to standard output
     '''
-    sys.stdout.write("Retrieving nr {:3d} of {}\r".format(nr, total))
-    sys.stdout.flush()
+    print("\rRetrieving nr {:3d} of {}".format(nr, total), end='', flush=True)
+    #sys.stdout.write("Retrieving nr {:3d} of {}\r".format(nr, total))
+    #sys.stdout.flush()
 
 
 def convertTimestamp(ts, ms=False):
