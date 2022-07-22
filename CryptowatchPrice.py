@@ -103,6 +103,8 @@ def getMarkets(req, coins, curr, strictness=0):
     curr = one string or list of strings with assets for market quote
             "coin+curr" = pair of market
     strictness = strictly (0), loose (1) or very loose (2) search for quote
+
+    if coin does not exist as base, try as quote
     '''
     if not isinstance(coins, list):
         coins = [coins]
@@ -115,10 +117,22 @@ def getMarkets(req, coins, curr, strictness=0):
         resp = req.getRequestResponse(url)
 
         if resp['status_code'] == 200:
-            res = resp['result']['markets']['base']
-            for r in res:
-                r["coin"] = symbol
-                r["curr"] = r["pair"].replace(symbol,"")
+            #             res = resp['result']['markets']['base']
+            res = resp['result']['markets']
+
+            # check if base or quote exists in result
+            if 'base' in res:
+                res = res['base']
+                for r in res:
+                    r["coin"] = symbol
+                    r["curr"] = r["pair"].replace(symbol,"")
+            elif 'quote' in res:
+                res = res['quote']
+                for r in res:
+                    r["curr"] = symbol
+                    r["coin"] = r["pair"].replace(symbol,"")
+            else:
+                print('Error, no quote or base in requested market symbol: ', symbol)
 
             # filter active pairs
             res = list(filter(lambda r: r['active']==True, res))
@@ -352,8 +366,9 @@ def __main__():
         
     curr = ["usd","btc","eth"]
 
+    print()
+    print("* Available markets of coins")
     markets = getMarkets(req, coins, curr)
-
     resdf = pd.DataFrame(markets)
     resdf_print = resdf.drop('route', axis=1)
     print(resdf_print)
