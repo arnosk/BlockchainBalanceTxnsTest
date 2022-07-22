@@ -54,9 +54,9 @@ class RequestHelper():
                        (no convertion to json)
         '''
 
-        # debug 
-        print('Inside RequestHelper.getRequestResponse')
-        print('URL: ', url)
+        # debug info
+        #print('Inside RequestHelper.getRequestResponse')
+        #print('URL: ', url)
 
         resp = []
         request_timeout = 120
