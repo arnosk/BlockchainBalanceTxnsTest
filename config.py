@@ -30,6 +30,11 @@ MORALIS_HTTP_PROVIDER = 'https://speedy-nodes-nyc.moralis.io/'
 CRYPTOWATCH_API = '' # Your Cryptowat.ch API
 CRYPTOWATCH_URL = 'https://api.cryptowat.ch'
 
+ALCOR_URL = 'https://?.alcor.exchange/api'
+
+WAVESEXCHANGE_API = '' # YOUR_PUBLIC_KEY
+WAVESEXCHANGE_SECRET = '' # YOUR_PRIVATE_KEY
+
 # minimal ABI
 ERC20_ABI = [
     # name

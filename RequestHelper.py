@@ -63,7 +63,7 @@ class RequestHelper():
 
         try:
             while True:
-                response = self.session.get(url, timeout=request_timeout, stream=stream)
+                response = self.session.get(url, timeout=request_timeout, stream=stream, verify=True)
                 if response.status_code == 429:
                     if "Retry-After" in response.headers.keys():
                         sleepTime = int(response.headers["Retry-After"])+1
@@ -86,10 +86,19 @@ class RequestHelper():
         
         try:
             resp = response.json()
-            response.raise_for_status()
-            resp['status_code'] = response.status_code
         except Exception as e:
-            print('No status Exception: ', response.json())
+            print('JSON Exception: ', e)
+
+        try:
+            response.raise_for_status()
+            if isinstance(resp, list):
+                resp = {'result': resp}
+
+            resp['status_code'] = response.status_code
+        except requests.exceptions.HTTPError as e:
+            print('No status Exception: ', e)
+        except Exception as e:
+            print('Other Exception: ', e)#, response.json())
             #raise
             resp['status_code'] = "error" # response.text
             resp['prices'] = ""

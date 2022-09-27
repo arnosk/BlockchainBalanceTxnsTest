@@ -7,3 +7,4 @@ cfscrape
 psycopg2
 openpyxl
 ccxt
+certifi

@@ -229,7 +229,8 @@ class DbHelperArko(DbHelper):
     '''
     def __init__(self, config:dict, db_type:str):
         self.table = {'coinCoingecko':'coinCoingecko',
-                      'coinCryptowatch':'coinCryptowatch'}
+                      'coinCryptowatch':'coinCryptowatch',
+                      'coinAlcor':'coinAlcor'}
         super().__init__(config, db_type)
 
     def createTable(self, table_name: str):
@@ -250,7 +251,7 @@ class DbHelperArko(DbHelper):
         if table_name == self.table['coinCoingecko']: 
             query = '''CREATE TABLE {} (
                         id {},
-                        coingeckoid VARCHAR(80),
+                        coingeckoid VARCHAR(80) NOT NULL,
                         name VARCHAR(80) NOT NULL,
                         symbol VARCHAR(40) NOT NULL
                         )
@@ -260,6 +261,15 @@ class DbHelperArko(DbHelper):
                         id {},
                         name VARCHAR(80) NOT NULL,
                         symbol VARCHAR(40) NOT NULL
+                        )
+                    '''.format(table_name, primarykey)
+        elif table_name == self.table['coinAlcor']: 
+            query = '''CREATE TABLE {} (
+                        id {},
+                        chain VARCHAR(20) NOT NULL,
+                        alcorid INT NOT NULL,
+                        base VARCHAR(80) NOT NULL,
+                        quote VARCHAR(80) NOT NULL
                         )
                     '''.format(table_name, primarykey)
             
