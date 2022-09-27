@@ -95,8 +95,16 @@ class RequestHelper():
                 resp = {'result': resp}
 
             resp['status_code'] = response.status_code
+
         except requests.exceptions.HTTPError as e:
             print('No status Exception: ', e)
+
+            # check if error key is in result dictionary
+            if 'error' in resp:
+                resp['status_code'] = "error"
+            else:
+                resp['status_code'] = "no status"
+
         except Exception as e:
             print('Other Exception: ', e)#, response.json())
             #raise
