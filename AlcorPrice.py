@@ -16,6 +16,7 @@ import openpyxl
 import DbHelper
 import RequestHelper
 import config
+import copy
 from datetime import datetime, timezone
 from dateutil import parser
 from pathlib import Path
@@ -91,7 +92,7 @@ def addCoinSymbol(db, prices:dict):
 
     prices = a dictionary with coin id from Alcor and prices
     '''
-    coins = db.query("SELECT chain, alcorid, base, quote FROM {}".format(db.table['coinAlcor']))
+    coins = db.query("SELECT alcorid, quote FROM {}".format(db.table['coinAlcor']))
     for priceKey, priceVal in prices.items():
         print(priceVal, priceKey)
         if isinstance(priceVal, dict):
@@ -103,59 +104,6 @@ def addCoinSymbol(db, prices:dict):
                 if priceKey == coinKey:
                     priceVal.append(coinVal)
 
-    return prices
-
-
-def getPriceHistory(req, coins, curr, date):
-    '''
-    Get alcor history price
-    one price per day, not suitable for tax in Netherlands on 31-12-20xx 23:00
-    coins can be a list of strings or a single string
-    Thumbnail image is available
-
-    req = instance of RequestHelper
-    coins = one string or list of strings with assets for market base
-    curr = one string or list of strings with assets for market quote
-    date = historical date 
-    '''
-    if not isinstance(coins, list):
-        coins = [coins]
-    if not isinstance(curr, list):
-        curr = [curr]
-
-    # set date in correct format for url call
-    dt = parser.parse(date)
-    date = dt.strftime("%d-%m-%Y")
-    
-    prices = {}
-    i = 0
-    for coin in coins:
-        i += 1
-        showProgress(i, len(coins))
-        url = "https://api.alcor.com/api/v3/coins/"+coin+"/history?date="+date+"&localization=false"
-        resp = req.getRequestResponse(url)
-        market_dataExist = "market_data" in resp
-        #print("coin:", coin)
-        #print("price of "+coin+" "+date+": ", resp['market_data']['current_price'][currency],currency)
-        #print("MarketCap of "+coin+" "+date+": ", resp['market_data']['market_cap'][currency],currency)
-        # init price
-        price = {}
-        if resp['status_code'] == "error":
-            # got no status from request, must be an error
-            for c in curr:
-                price[c] = resp['error']
-        else:
-            price["symbol"] = resp['symbol']
-            for c in curr:
-                price[c] = "no data"
-
-            for c in curr:
-                if market_dataExist:
-                    if c in resp['market_data']['current_price']:
-                        price[c] = resp['market_data']['current_price'][c]
-
-        prices[coin] = price
-        
     return prices
 
 
@@ -198,52 +146,14 @@ def getPrice(req, coins, **kwargs):
     return prices
 
 
-def getTokenPrice(req, contracts, **kwargs):
+def getPriceHistoryMarketChart(req, coins, date):
     '''
-    Get alcor current price of a token
-
+    Get alcor history price of a coin via market chart data
+    
     req = instance of RequestHelper
-    coins = one string or list of strings with token contracts for market base
-    **kwargs = extra arguments in url 
-    '''
-    # convert list to comma-separated string
-    if isinstance(contracts, list):
-        contracts = ','.join(contracts)
-    if isinstance(curr, list):
-        curr = ','.join(curr)
-        
-    # make parameters
-    kwargs['contract_addresses'] = contracts
-    kwargs['vs_currencies'] = curr
-    kwargs['include_last_updated_at'] = True
-        
-    url = "https://api.alcor.com/api/v3/simple/token_price/"+chain
-    url = req.api_url_params(url, kwargs)
-    resp = req.getRequestResponse(url)
-
-    # remove status_code from dictionary
-    resp.pop("status_code")
-
-    # convert timestamp to date
-    resp = convertTimestampLastUpdated(resp)
-
-    return resp
-
-
-def getTokenPriceHistory(req, coins, date):
-    '''
-    Get alcor history price of a coin or a token
-    coins_contracts can be a list of strings or a single string
-    If chain = "none" or None search for a coins otherwise search for token contracts
-
-    req = instance of RequestHelper
-    coins = one string or list of strings with assets or token contracts for market base
+    coins = list of [chain, coinid] with assets or token contracts for market base
     date = historical date 
     '''
-    if not isinstance(coins, list):
-        contracts = [coins]
-    if isinstance(curr, list):
-        curr = curr[0]
 
     # convert date to unix timestamp
     dt = parser.parse(date) # local time
@@ -251,40 +161,66 @@ def getTokenPriceHistory(req, coins, date):
     
     # make parameters
     params = {}
-    params['vs_currency'] = curr
-    params['from'] = ts
-    params['to'] = ts+3600
-
-    if (chain is not None):
-        chain = chain.lower()
+    params['resolution'] = 60
+    params['from'] = ts #-3600
+    params['to'] = ts #+3600
 
     prices = {}
     i = 0
     for coin in coins:
         i += 1
         showProgress(i, len(coins))
-        if (chain=='none' or chain is None): 
-            url = "https://api.alcor.com/api/v3/coins/"+coin+"/market_chart/range"
-        else:
-            url = "https://api.alcor.com/api/v3/coins/"+chain+"/contract/"+coin+"/market_chart/range"
-        url = req.api_url_params(url, params)
-        resp = req.getRequestResponse(url)
 
-        if resp['status_code'] == "error":
-            # got no status from request, must be an error
-            prices[coin] = [resp['error'], 0]
-        else:
-            price = resp['prices']
-            if (len(price) > 0):
-                # convert timestamp to date
-                for p in price:
-                    p[0] = convertTimestamp(p[0], True)
-                
-                prices[coin] = price[0]
+        url = "https://{}.alcor.exchange/api/markets/{}/charts".format(coin[0], coin[1])
+        paramsTry = copy.deepcopy(params)
+        nrTry = 1
+
+        # get coin name
+        coinName = coin[1]
+
+        # try to get history data from and to specific date
+        # increase time range until data is found
+        while True: 
+            urlTry = req.api_url_params(url, paramsTry)
+            resp = req.getRequestResponse(urlTry)
+
+            if resp['status_code'] == "error":
+                # got no status from request, must be an error
+                prices[coinName] = [resp['error'], 0]
+                break
+
             else:
-                # no data, set empty record
-                prices[coin] = ['no data', 0]
-        
+                result = resp['result']
+
+                if len(result) > 0:
+                    # select result with timestamp nearest to desired date ts
+                    resultMinimal = {}
+                    timeDiffMinimal = -1
+                    for res in result:
+                        timeDiff = abs(ts*1000 - res['time'])
+                        if timeDiff < timeDiffMinimal or timeDiffMinimal == -1:
+                            # remember record
+                            resultMinimal = res
+                            timeDiffMinimal = timeDiff
+
+                    # convert timestamp to date
+                    resultMinimal['time'] = convertTimestamp(resultMinimal['time'], True)
+                    
+                    # take first record?
+                    prices[coinName] = [resultMinimal['time'], resultMinimal['open']]
+                    break
+
+                elif nrTry > 10:
+                    # if too many retries for date ranges, stop
+                    prices[coinName] = ['no data', 0]
+                    break
+
+                else:
+                    # retry same coin with new date range
+                    paramsTry['from'] -= 2**nrTry * 3600
+                    paramsTry['to'] += 2**nrTry * 3600
+                    nrTry += 1
+
     return prices
 
 
@@ -350,22 +286,12 @@ def __main__():
     writeToFile(df, outputCSV, outputXLS, "_current_coins_%s"%(currentDate))
     print()
 
-    print("* History price of coins")
-    price = getPriceHistory(req, coins, date)
-    df = pd.DataFrame(price).transpose()
-    df = df.sort_index(key=lambda x: x.str.lower())
-    print()
-    print(date)
-    print(df)
-    writeToFile(df, outputCSV, outputXLS, "_hist_%s"%(date))
-    print()
- 
     print("* History price of coins via market_chart")
-    price = getTokenPriceHistory(req, coins, date)
+    price = getPriceHistoryMarketChart(req, coins, date)
     if dbExist:
         price = addCoinSymbol(db, price)
     df = pd.DataFrame(price).transpose()
-    df = df.sort_index(key=lambda x: x.str.lower())
+    #df = df.sort_index(key=lambda x: x.str.lower())
     print()
     print(df)
     writeToFile(df, outputCSV, outputXLS, "_hist_marketchart_%s"%(date))
