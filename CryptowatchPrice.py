@@ -211,7 +211,7 @@ def getPrice(req, markets):
     return prices
 
 
-def getTokenPriceHistory(req, markets, date):
+def getPriceHistoryMarketChart(req, markets, date):
     '''
     Get coingecko history price of a coin or a token
     coins_contracts can be a list of strings or a single string
@@ -392,7 +392,7 @@ def __main__():
     print()
 
     print("* History price of coins via market_chart")
-    price = getTokenPriceHistory(req, markets, date)
+    price = getPriceHistoryMarketChart(req, markets, date)
     price = filterMarketPairOnVolume(price, maxMarketsPerPair)
     print()
     if len(price) > 0:

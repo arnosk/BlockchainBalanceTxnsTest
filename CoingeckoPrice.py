@@ -231,7 +231,7 @@ def getTokenPrice(req, chain, contracts, curr, **kwargs):
     return resp
 
 
-def getTokenPriceHistory(req, chain, coins_contracts, curr, date):
+def getPriceHistoryMarketChart(req, chain, coins_contracts, curr, date):
     '''
     Get coingecko history price of a coin or a token
     coins_contracts can be a list of strings or a single string
@@ -362,7 +362,7 @@ def __main__():
     print()
  
     print("* History price of coins via market_chart")
-    price = getTokenPriceHistory(req, None, coins, curr[0], date)
+    price = getPriceHistoryMarketChart(req, None, coins, curr[0], date)
     if dbExist:
         price = addCoinSymbol(db, price)
     df = pd.DataFrame(price).transpose()
@@ -382,7 +382,7 @@ def __main__():
     print()
     
     print("* History price of token via market_chart")
-    price = getTokenPriceHistory(req, chain, contracts, curr[0], date)
+    price = getPriceHistoryMarketChart(req, chain, contracts, curr[0], date)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
