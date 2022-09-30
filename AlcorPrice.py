@@ -129,7 +129,7 @@ def getPrice(req, coins, **kwargs):
     # get all market data per chain, and then search through that list for the id's
     prices = {}
     for key_chain, val_coins in coinsrch.items():
-        url = "https://{}.alcor.exchange/api/markets".format(key_chain)
+        url = config.ALCOR_URL.replace('?', key_chain) + "/markets"
         url = req.api_url_params(url, kwargs)
         resp = req.getRequestResponse(url)
         
@@ -175,7 +175,7 @@ def getPriceHistoryMarketChart(req, coins, date):
         i += 1
         showProgress(i, len(coins))
 
-        url = "https://{}.alcor.exchange/api/markets/{}/charts".format(coin[0], coin[1])
+        url = config.ALCOR_URL.replace('?', coin[0]) + "/markets/{}/charts".format(coin[1])
         paramsTry = copy.deepcopy(params)
         nrTry = 1
 
