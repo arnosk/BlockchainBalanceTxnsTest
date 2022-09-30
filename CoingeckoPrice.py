@@ -63,22 +63,26 @@ def writeToFile(df, outputCSV, outputXLS, suffix):
     Write a dataframe to a csv file and/or excel file
 
     df = DataFrame to write to file
-    outputCSV = path + base filename for csv output file
-    outputXLS = path + base filename for xlsx output file
+    outputCSV = base filename for csv output file
+    outputXLS = base filename for xlsx output file
     suffix = last part of filename
 
-    filename CSV file = outputCSV+suffix.csv
-    filename XLS file = outputXLS+suffix.xlsx
+    filename CSV file = config.OUTPUT_PATH+outputCSV+suffix.csv
+    filename XLS file = config.OUTPUT_PATH+outputXLS+suffix.xlsx
     '''
     suffix = re.sub('[:;,!@#$%^&*()]', '', suffix)
+    outputPath = config.OUTPUT_PATH
+    if outputPath != '':
+        outputPath = outputPath + '\\'
+
     if outputCSV is not None:
-        filepath = Path('%s%s.csv'%(outputCSV, suffix))  
+        filepath = Path('%s%s%s.csv'%(outputPath, outputCSV, suffix))  
         filepath.parent.mkdir(parents=True, exist_ok=True)  
         df.to_csv(filepath)
         print("File written: %s"%(filepath))
 
     if outputXLS is not None:
-        filepath = Path('%s%s.xlsx'%(outputXLS, suffix))  
+        filepath = Path('%s%s%s.xlsx'%(outputPath, outputXLS, suffix))  
         filepath.parent.mkdir(parents=True, exist_ok=True)  
         df.to_excel(filepath)
         print("File written: %s"%(filepath))

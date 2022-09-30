@@ -6,7 +6,9 @@
 DB_TYPE = 'sqlite'
 DB_CONFIG = {'dbname':'Arkofolio.db'}
 
-
+# Output path (relative or absolute)
+# Use / or \\ for folders
+OUTPUT_PATH = 'output'
 
 # ethereum addresses
 ETH_ADDRESS = ['0x2c1ba59d6f58433fb1eaee7d20b26ed83bda51a3', # internal tx
