@@ -176,7 +176,10 @@ def getPriceHistoryMarketChart(req, coins, date):
         nrTry = 1
 
         # get coin name
-        coinName = coin[1]
+        if len(coin) > 2:
+            coinName = coin[2]
+        else:
+            coinName = coin[1]
 
         # try to get history data from and to specific date
         # increase time range until data is found
@@ -267,8 +270,8 @@ def __main__():
         chain = chainStr if chainStr != None else 'proton'
         coins = [[chain, i] for i in coins]
     elif dbExist:
-        coins = db.query("SELECT chain, alcorid FROM {}".format(db.table['coinAlcor']))
-        coins = [[i[0], i[1]] for i in coins]
+        coins = db.query("SELECT chain, alcorid, quote FROM {}".format(db.table['coinAlcor']))
+        coins = [[i[0], i[1], i[2]] for i in coins]
     else:
         coins = [['proton', 157], ['wax', 158], ['proton', 13], ['wax', 67], ['proton', 5], ['eos', 2], ['telos', 34], ['proton', 96]]
 
@@ -288,10 +291,10 @@ def __main__():
 
     print("* History price of coins via market_chart")
     price = getPriceHistoryMarketChart(req, coins, date)
-    if dbExist:
-        price = addCoinSymbol(db, price)
+    #if dbExist:
+    #    price = addCoinSymbol(db, price)
     df = pd.DataFrame(price).transpose()
-    #df = df.sort_index(key=lambda x: x.str.lower())
+    df = df.sort_index(key=lambda x: x.str.lower())
     print()
     print(df)
     writeToFile(df, outputCSV, outputXLS, "_hist_marketchart_%s"%(date))
