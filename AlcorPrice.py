@@ -183,7 +183,7 @@ def getPriceHistoryMarketChart(req, coins, date):
         if len(coin) > 2:
             coinName = coin[2]
         else:
-            coinName = coin[1]
+            coinName = str(coin[1]).zfill(3)
 
         # try to get history data from and to specific date
         # increase time range until data is found
