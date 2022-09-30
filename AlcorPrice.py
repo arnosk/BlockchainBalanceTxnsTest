@@ -140,8 +140,8 @@ def getPrice(req, coins, **kwargs):
         for item in resp['result']:
             if item['id'] in val_coins:
                 #res_coins.append(item)
-                prices.setdefault(item['quote_token']['symbol']['name'], []).append(item['last_price'])
-                prices.setdefault(item['quote_token']['symbol']['name'], []).append(item['base_token']['symbol']['name'])
+                prices.setdefault(item['quote_token']['str'], []).append(item['last_price'])
+                prices.setdefault(item['quote_token']['str'], []).append(item['base_token']['str'])
         
         #prices.append(res_coins)
 
@@ -182,8 +182,10 @@ def getPriceHistoryMarketChart(req, coins, date):
         # get coin name
         if len(coin) > 2:
             coinName = coin[2]
+            coinBase = coin[3]
         else:
             coinName = str(coin[1]).zfill(3)
+            coinBase = '-'
 
         # try to get history data from and to specific date
         # increase time range until data is found
@@ -193,7 +195,7 @@ def getPriceHistoryMarketChart(req, coins, date):
 
             if resp['status_code'] == "error":
                 # got no status from request, must be an error
-                prices[coinName] = [resp['error'], 0]
+                prices[coinName] = [resp['error'], 0, coinBase]
                 break
 
             else:
@@ -214,12 +216,12 @@ def getPriceHistoryMarketChart(req, coins, date):
                     resultMinimal['time'] = convertTimestamp(resultMinimal['time'], True)
                     
                     # take first record?
-                    prices[coinName] = [resultMinimal['time'], resultMinimal['open']]
+                    prices[coinName] = [resultMinimal['time'], resultMinimal['open'], coinBase]
                     break
 
                 elif nrTry > 10:
                     # if too many retries for date ranges, stop
-                    prices[coinName] = ['no data', 0]
+                    prices[coinName] = ['no data', 0, coinBase]
                     break
 
                 else:
@@ -274,8 +276,8 @@ def __main__():
         chain = chainStr if chainStr != None else 'proton'
         coins = [[chain, i] for i in coins]
     elif dbExist:
-        coins = db.query("SELECT chain, alcorid, quote FROM {}".format(db.table['coinAlcor']))
-        coins = [[i[0], i[1], i[2]] for i in coins]
+        coins = db.query("SELECT chain, alcorid, quote, base FROM {}".format(db.table['coinAlcor']))
+        coins = [[i[0], i[1], i[2], i[3]] for i in coins]
     else:
         coins = [['proton', 157], ['wax', 158], ['proton', 13], ['wax', 67], ['proton', 5], ['eos', 2], ['telos', 34], ['proton', 96]]
 

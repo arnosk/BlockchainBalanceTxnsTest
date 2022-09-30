@@ -33,6 +33,7 @@ CRYPTOWATCH_API = '' # Your Cryptowat.ch API
 CRYPTOWATCH_URL = 'https://api.cryptowat.ch'
 
 ALCOR_URL = 'https://?.alcor.exchange/api'
+ALCOR_CHAINS = ["eos","telos","wax","proton"]
 
 WAVESEXCHANGE_API = '' # YOUR_PUBLIC_KEY
 WAVESEXCHANGE_SECRET = '' # YOUR_PRIVATE_KEY

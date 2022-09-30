@@ -23,11 +23,14 @@ def searchId(searchStr, assets):
     assets = list of assets from Alcor
     '''
     s = (searchStr).lower()
-    resCoins = [item for item in assets \
-                if (re.match(s, item['base_token']['symbol']['name'].lower()) or \
-                    re.search(s, item['base_token']['str'].lower()) or \
-                    re.match(s, item['quote_token']['symbol']['name'].lower()) or \
-                    re.search(s, item['quote_token']['str'].lower()) )]
+    resCoins = []
+    for asset in assets.values():
+        resCoin = [item for item in asset \
+                    if (re.match(s, item['base_token']['symbol']['name'].lower()) or \
+                        re.search(s, item['base_token']['str'].lower()) or \
+                        re.match(s, item['quote_token']['symbol']['name'].lower()) or \
+                        re.search(s, item['quote_token']['str'].lower()) )]
+        resCoins.extend(resCoin)
     return resCoins
 
 
@@ -103,7 +106,7 @@ def search(req, db, coinSearch, assets):
     req = instance of RequestHelper
     db = instance of DbHelperArko
     coinSearch = string to search in assets
-    assets = list of string with assets from Alcor
+    assets = dictionary where each key is a chain with a list of string with assets from Alcor
     '''
     pd.set_option("display.max_colwidth", 20)
 
@@ -127,9 +130,13 @@ def search(req, db, coinSearch, assets):
     if (len(cwResultCoin) > 0):
         cwResultCoinPrint = []
         for item in cwResultCoin:
+            print(type(item))
+            print(item)
+            print(item['base_token'])
+            print('--------------------')
             cwResultCoinPrint.append(
-                {'base': item['base_token']['str'], # item['base_token']['symbol']['name']
-                'quote': item['quote_token']['str'], # item['quote_token']['symbol']['name']
+                {'quote': item['quote_token']['str'], # item['quote_token']['symbol']['name']
+                'base': item['base_token']['str'], # item['base_token']['symbol']['name']
                 'chain': item['chain'],
                 'volume24': item['volume24'],
                 'volumeM': item['volumeMonth'],
@@ -139,7 +146,7 @@ def search(req, db, coinSearch, assets):
                 }
             )
         cwResultCoindf = pd.DataFrame(cwResultCoinPrint)
-        cwResultCoindf_print = cwResultCoindf #.filter(['base_token', 'quote_token'], axis=1)
+        cwResultCoindf_print = cwResultCoindf #.filter(['quote_token', 'base_token'], axis=1)
         print("Search from Alcor:")
         print(cwResultCoindf_print)
     else:
@@ -203,10 +210,7 @@ def __main__():
     if chainStr != None:
         chains = re.split('[;,]', chainStr)
     else:
-        chains = ["eos","telos","wax","bos","proton"]
-
-    # for start, only search on proton chain
-    chains = ['proton']
+        chains = config.ALCOR_CHAINS
 
     db = DbHelper.DbHelperArko(config.DB_CONFIG, config.DB_TYPE)
     dbExist = db.checkDb()
@@ -225,10 +229,12 @@ def __main__():
     req = RequestHelper.RequestHelper()
     
     # get all assets from Alcor
-    urlList = config.ALCOR_URL.replace('?', chains[0]) + "/markets"
-    print(urlList)
-    resp = req.getRequestResponse(urlList)
-    coinassets = resp['result']
+    coinassets = {}
+    for chain in chains:
+        urlList = config.ALCOR_URL.replace('?', chain) + "/markets"
+        print(urlList)
+        resp = req.getRequestResponse(urlList)
+        coinassets[chain] = resp['result']
     
     while coinassets != None:
         if coinSearch == None:
