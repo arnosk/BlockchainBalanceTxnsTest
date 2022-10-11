@@ -194,12 +194,22 @@ def getPrice(req, markets):
         if not 'error' in market:
             urlList = market["route"] + "/summary"
             resp = req.getRequestResponse(urlList)
+
+            # check for correct result
+            if resp['status_code'] == "error":
+                # got no status from request, must be an error
+                resPrice = resp['error']
+                respVolume = 0
+            else:
+                resPrice = resp['result']['price']['last']
+                respVolume = resp['result']['volume']
+                
             res = [{'exchange':market["exchange"],
                     'pair':market["pair"],
                     'coin':market["coin"],
                     'curr':market["curr"],
-                    'price':resp['result']['price']['last'],
-                    'volume':resp['result']['volume'],
+                    'price':resPrice,
+                    'volume':respVolume,
                     'date':currentDate}]
             
             if "allowance" in resp:

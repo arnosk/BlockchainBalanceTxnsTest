@@ -193,6 +193,7 @@ def getPriceHistoryMarketChart(req, coins, date):
             urlTry = req.api_url_params(url, paramsTry)
             resp = req.getRequestResponse(urlTry)
 
+            # check for correct result
             if resp['status_code'] == "error":
                 # got no status from request, must be an error
                 prices[coinName] = [resp['error'], 0, coinBase]
