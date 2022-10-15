@@ -1,4 +1,4 @@
-'''
+"""
 Created on May 06, 2022
 
 @author: arno
@@ -6,12 +6,12 @@ Created on May 06, 2022
 Collecting prices
 
 CCXT
-'''
+"""
 import ccxt
 #import ccxt.async_support as ccxt
 import RequestHelper
 
-def testCcxt():
+def test_ccxt():
     print(ccxt.exchanges)
     we = ccxt.wavesexchange({
     #    'apiKey': 'YOUR_PUBLIC_KEY'
@@ -22,24 +22,24 @@ def testCcxt():
     markets = we.load_markets()
     print(markets)
 
-def testApi():
+def test_api():
     # init request helper class
     req = RequestHelper.RequestHelper()
-    apiUrl = 'https://api.waves.exchange'
-    getUrl = '/v1/platforms'
-    resp = req.getRequestResponse(apiUrl+getUrl)
+    api_url = 'https://api.waves.exchange'
+    get_url = '/v1/platforms'
+    resp = req.get_request_response(api_url+get_url)
     print(resp)
 
 def __main__():
-    '''
+    """
     Get Waves Exchange price history
 
     Arguments:
     - date for historical prices
     - coin search prices for specfic coin
     - output file for saving results in a csv file
-    '''
-    testApi()
+    """
+    test_api()
 
 
 if __name__=='__main__':

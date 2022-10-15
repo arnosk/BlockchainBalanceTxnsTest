@@ -1,4 +1,4 @@
-'''
+"""
 Created on Feb 11, 2022
 
 @author: arno
@@ -9,7 +9,7 @@ Is very slow
 result is written to json file
 
 same as W3TxnsPerBlock but with args example
-'''
+"""
 #!/usr/bin/python
 import argparse
 import json
@@ -30,20 +30,19 @@ from hexbytes import HexBytes
 provider = Web3.HTTPProvider(config.ETH_HTTP_PROVIDER)
 w3 = Web3(provider)
 if (not w3.isConnected()):
-    sys.exit("No ethereum provider, Web3 disconnected")
+    sys.exit('No ethereum provider, Web3 disconnected')
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('addr', type=str, help='Address to print the transactions for')
-parser.add_argument('-o', '--output', type=str, help="Path to the output JSON file", required=True)
+parser.add_argument('-o', '--output', type=str, help='Path to the output JSON file', required=True)
 parser.add_argument('-s', '--start-block', type=int, help='Start block', default=0)
 parser.add_argument('-e', '--end-block',  type=int, help='End block', default=w3.eth.blockNumber)
 
 def tx_to_json(tx):
-    '''
-    Transform a dict to a Json
+    """Transform a dict to a Json
     In case the values are HexBytes convert to normal hex values 
-    '''
+    """
     result = {}
     for key, val in tx.items():
         if isinstance(val, HexBytes):
@@ -54,13 +53,12 @@ def tx_to_json(tx):
     return json.dumps(result)
 
 def __main__():
-    '''
-    Exports transactions to a JSON file where each line
+    """Exports transactions to a JSON file where each line
     contains the data returned from the JSONRPC interface
 
     The following script fetches blocks and filters transactions to/from the given
     address. You can modify it to suit your needs.
-    '''
+    """
     args = parser.parse_args()
 
     start_block = args.start_block

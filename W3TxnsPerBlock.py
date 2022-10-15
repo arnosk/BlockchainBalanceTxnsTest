@@ -1,4 +1,4 @@
-'''
+"""
 Created on Feb 11, 2022
 
 @author: arno
@@ -9,7 +9,7 @@ Is very slow
 result is written to json file
 
 same as W3TxnsPerBlockArgs but without args example
-'''
+"""
 #!/usr/bin/python
 import sys
 import json
@@ -27,10 +27,9 @@ from hexbytes import HexBytes
 
 
 def tx_to_json(tx):
-    '''
-    Transform a dict to a Json
+    """Transform a dict to a Json
     In case the values are HexBytes convert to normal hex values 
-    '''
+    """
     result = {}
     for key, val in tx.items():
         if isinstance(val, HexBytes):
@@ -41,21 +40,20 @@ def tx_to_json(tx):
     return json.dumps(result)
 
 def __main__():
-    '''
-    Exports transactions to a JSON file where each line
+    """Exports transactions to a JSON file where each line
     contains the data returned from the JSONRPC interface
 
     The following script fetches blocks via Web3 and filters transactions to/from the given
     address. You can modify it to suit your needs.
 
-    '''
+    """
     w3_eth = Web3(Web3.HTTPProvider(config.ETH_HTTP_PROVIDER))
     w3_bsc = Web3(Web3.HTTPProvider(config.BSC_HTTP_PROVIDER))
     if (not w3_eth.isConnected()):
-        sys.exit("No ethereum provider, Web3 disconnected")
+        sys.exit('No ethereum provider, Web3 disconnected')
     
     if (not w3_bsc.isConnected()):
-        sys.exit("No binance smart chain provider, Web3 disconnected")
+        sys.exit('No binance smart chain provider, Web3 disconnected')
     
     w3 = w3_eth
     

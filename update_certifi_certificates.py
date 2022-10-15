@@ -28,10 +28,11 @@ MOZILLA_URL = 'https://mkcert.org/generate/'
 
 
 def strip_non_ascii(line):
-    '''Strips non-ascii characters from PEM files, 
+    """Strips non-ascii characters from PEM files, 
     replacing them with escaped backslashes.
     Adapted from 
-    https://github.com/certifi/python-certifi/blob/master/strip-non-ascii'''
+    https://github.com/certifi/python-certifi/blob/master/strip-non-ascii
+    """
     line = line.decode('utf-8')
     line = line.encode('ascii', errors='backslashreplace')
     return line

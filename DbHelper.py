@@ -1,4 +1,4 @@
-'''
+"""
 Created on Mar 23, 2022
 
 @author: arno
@@ -6,26 +6,27 @@ Created on Mar 23, 2022
 Database Helper Utilities Class
 
 more info: https://github.com/xfoobar/slim_helper/blob/main/slim_helper/db_helper.py
-'''
+"""
 from enum import Enum,auto
 
 
 class DbType(Enum):
-    '''
-    Class for enumerating databse types
+    """Class for enumerating databse types
+    
     Possible types:
     SQLite and PostgreSQL
-    '''
+    """
     sqlite = auto()
     postgresql = auto()
 
     @classmethod
-    def hasMember(cls, member):
+    def has_member(cls, member):
         return member in cls._member_names_
 
 
 class DbHelper():
-    '''
+    """Class for database actions
+
     constructor:
         config(Dict): Database connection params
         db_type(str): Database type
@@ -43,14 +44,14 @@ class DbHelper():
         ...
         db.close()
 
-    '''
+    """
 
     def __init__(self, config:dict, db_type:str):
         self.conn = None
         self.config = config
-        self.chkTable = {}
+        self.chk_table = {}
         db_type = db_type.lower()
-        if DbType.hasMember(db_type):
+        if DbType.has_member(db_type):
             self.db_type = DbType[db_type]
         else:
             raise ValueError('Unknown database type: {}'.format(db_type))
@@ -69,11 +70,10 @@ class DbHelper():
             self.conn = None
 
     def open(self, create = True):
-        '''
-        Function to open a connection to the database
+        """Function to open a connection to the database
 
         create = For SQLite: When create is True it creates a new database when it doesnot exists
-        '''
+        """
         if not self.conn:
             if self.db_type == DbType.sqlite:
                 import sqlite3
@@ -114,14 +114,15 @@ class DbHelper():
             raise RuntimeError('Database connection already exists')
 
 
-    def checkDb(self, table_name: str = None):
-        '''
+    def check_db(self, table_name: str = None):
+        """Check database
+
         Check wether the database exists and can be found
         If provided with a table_name also check if this table is already created
 
         table_name = string with a name of a table to check if it iexists in database
                      if None table check is skipped
-        '''
+        """
         check = False
 
         # check existance of database
@@ -135,50 +136,51 @@ class DbHelper():
         if self.conn is not None:
             if table_name is not None:
                 if self.db_type == DbType.sqlite:
-                    queryCheckTable = "SELECT name FROM sqlite_master WHERE type='table' AND name=?"
+                    query_chk_table = 'SELECT name FROM sqlite_master WHERE type="table" AND name=?'
                 elif self.db_type == DbType.postgresql:
-                    queryCheckTable = "SELECT exists(SELECT * FROM information_schema.tables WHERE table_name=?)"
+                    query_chk_table = 'SELECT exists(SELECT * FROM information_schema.tables WHERE table_name=?)'
 
-                if self.query(queryCheckTable, (table_name,)):
+                if self.query(query_chk_table, (table_name,)):
                     # Database exists and table exists
                     check = True
-                    print("'{}' table exist".format(table_name))
+                    print('"{}" table exist'.format(table_name))
                 else:
-                    print("'{}' table not exist.".format(table_name))
+                    print('"{}" table not exist.'.format(table_name))
             else:
                 # Database exists and no check on table name
                 check = True
 
         if table_name is not None:
-            self.chkTable[table_name] = check
+            self.chk_table[table_name] = check
 
         return check
 
 
-    def checkTable(self, table_name):
-        '''
-        Check wether the a table exists
+    def check_table(self, table_name):
+        """Check wether the a table exists
+        
         Uses a query or a memory field if already queried
 
         table_name = string with a name of a table to check if it iexists in database
-        '''
-        if table_name in self.chkTable:
-            return self.chkTable[table_name]
+        """
+        if table_name in self.chk_table:
+            return self.chk_table[table_name]
         else:
-            return self.checkDb(table_name)
+            return self.check_db(table_name)
         
 
 
     def execute(self, sql: str, params = None) -> int:
-        '''
+        """Execute a query
+
         Executes a query and returns number of rows or number of changes
         For SQLite cursor.rowcount doesn't exists
 
         sql = query to execute,
         params = dictionary for parameters in query
         return value = rowcount or total changes
-        '''
-        print("Execute:", sql, params)
+        """
+        print('Execute:', sql, params)
         cursor = self.conn.cursor()
         if params:
             cursor.execute(sql, params)
@@ -192,14 +194,13 @@ class DbHelper():
         return result
 
     def query(self, sql: str, params = None):
-        '''
-        Executes a query and returns the result
+        """Execute a query and returns the result
 
         sql = query to execute,
         params = dictionary for parameters in query
         return value = fetched data from query
-        '''
-        print("Query:", sql, params)
+        """
+        print('Query:', sql, params)
         cursor = self.conn.cursor()
         if params:
             cursor.execute(sql, params)
@@ -215,18 +216,19 @@ class DbHelper():
     def rollback(self):
         self.conn.rollback()
 
-    def getDbType(self):
+    def get_db_type(self):
         return self.db_type
 
-    def hasConnection(self):
+    def has_connection(self):
         return self.conn != None
 
 
 class DbHelperArko(DbHelper):
-    '''
-    Extension of DbHelper
+    """Extension of DbHelper
+
     With special features/functions for Arko program
-    '''
+    """
+
     def __init__(self, config:dict, db_type:str):
         self.table = {'coinCoingecko':'coinCoingecko',
                       'coinCryptowatch':'coinCryptowatch',
@@ -234,20 +236,19 @@ class DbHelperArko(DbHelper):
         super().__init__(config, db_type)
 
     def createTable(self, table_name: str):
-        '''
-        Create a new table
+        """Create a new table
 
         table_name = table to create
                      (must exist in table list)
-        '''
+        """
         if self.db_type == DbType.postgresql:
-            primarykey = "SERIAL PRIMARY KEY"
+            primary_key = 'SERIAL PRIMARY KEY'
         elif self.db_type == DbType.sqlite:
-            primarykey = "INTEGER PRIMARY KEY AUTOINCREMENT"
+            primary_key = 'INTEGER PRIMARY KEY AUTOINCREMENT'
         else:
-            primarykey = "INT AUTO_INCREMENT PRIMARY KEY"
+            primary_key = 'INT AUTO_INCREMENT PRIMARY KEY'
 
-        query = ""
+        query = ''
         if table_name == self.table['coinCoingecko']: 
             query = '''CREATE TABLE {} (
                         id {},
@@ -255,14 +256,14 @@ class DbHelperArko(DbHelper):
                         name VARCHAR(80) NOT NULL,
                         symbol VARCHAR(40) NOT NULL
                         )
-                    '''.format(table_name, primarykey)
+                    '''.format(table_name, primary_key)
         elif table_name == self.table['coinCryptowatch']: 
             query = '''CREATE TABLE {} (
                         id {},
                         name VARCHAR(80) NOT NULL,
                         symbol VARCHAR(40) NOT NULL
                         )
-                    '''.format(table_name, primarykey)
+                    '''.format(table_name, primary_key)
         elif table_name == self.table['coinAlcor']: 
             query = '''CREATE TABLE {} (
                         id {},
@@ -271,7 +272,7 @@ class DbHelperArko(DbHelper):
                         base VARCHAR(80) NOT NULL,
                         quote VARCHAR(80) NOT NULL
                         )
-                    '''.format(table_name, primarykey)
+                    '''.format(table_name, primary_key)
             
         self.execute(query)
 

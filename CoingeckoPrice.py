@@ -1,4 +1,4 @@
-'''
+"""
 Created on Mar 23, 2022
 
 @author: arno
@@ -6,7 +6,7 @@ Created on Mar 23, 2022
 Collecting prices
 
 Coingecko
-'''
+"""
 import sys
 import json
 import argparse
@@ -21,98 +21,95 @@ from dateutil import parser
 from pathlib import Path
 
 
-def showProgress(nr, total):
-    '''
-    Show progress to standard output
-    '''
+def show_progress(nr: int, total: int):
+    """Show progress to standard output
+    """
     print("\rRetrieving nr {:3d} of {}".format(nr, total), end='', flush=True)
     #sys.stdout.write("Retrieving nr {:3d} of {}\r".format(nr, total))
     #sys.stdout.flush()
 
 
-def convertTimestamp(ts, ms=False):
-    '''
-    convert timestamp to date string
+def convert_timestamp(ts, ms=False):
+    """Convert timestamp to date string
     
     ts = timestamp in sec if ms = False
     ts = timestamp in msec if ms = True
-    '''
+    """
     if ms:
         ts = int(ts/1000)
     dt = datetime.fromtimestamp(ts, tz=timezone.utc)
     return str(dt)
 
 
-def convertTimestampLastUpdated(resp):
-    '''
-    Convert LastUpdated field in dictonary from timestamp to date
+def convert_timestamp_lastupdated(resp):
+    """Convert LastUpdated field in dictonary from timestamp to date
 
     resp = a list of dictionaries with history data from Coingecko
-    '''
-    keyLastUpdated = 'last_updated_at'
+    """
+    key_lastupdated = 'last_updated_at'
     for v in resp.values():
         if isinstance(v, dict):
-            if keyLastUpdated in v.keys():
-                ts = v[keyLastUpdated]
-                v.update({keyLastUpdated:convertTimestamp(ts, False)})
+            if key_lastupdated in v.keys():
+                ts = v[key_lastupdated]
+                v.update({key_lastupdated:convert_timestamp(ts, False)})
     return resp
 
 
-def writeToFile(df, outputCSV, outputXLS, suffix):
-    '''
-    Write a dataframe to a csv file and/or excel file
+def write_to_file(df, output_csv: str, output_xls: str, suffix: str):
+    """Write a dataframe to a csv file and/or excel file
 
     df = DataFrame to write to file
-    outputCSV = base filename for csv output file
-    outputXLS = base filename for xlsx output file
+    output_csv = base filename for csv output file
+    output_xls = base filename for xlsx output file
     suffix = last part of filename
 
-    filename CSV file = config.OUTPUT_PATH+outputCSV+suffix.csv
-    filename XLS file = config.OUTPUT_PATH+outputXLS+suffix.xlsx
-    '''
+    filename CSV file = config.OUTPUT_PATH+output_csv+suffix.csv
+    filename XLS file = config.OUTPUT_PATH+output_xls+suffix.xlsx
+    """
     suffix = re.sub('[:;,!@#$%^&*()]', '', suffix)
-    outputPath = config.OUTPUT_PATH
-    if outputPath != '':
-        outputPath = outputPath + '\\'
+    outputpath = config.OUTPUT_PATH
+    if outputpath != '':
+        outputpath = outputpath + '\\'
 
-    if outputCSV is not None:
-        filepath = Path('%s%s%s.csv'%(outputPath, outputCSV, suffix))  
+    if output_csv is not None:
+        filepath = Path('%s%s%s.csv'%(outputpath, output_csv, suffix))  
         filepath.parent.mkdir(parents=True, exist_ok=True)  
         df.to_csv(filepath)
         print("File written: %s"%(filepath))
 
-    if outputXLS is not None:
-        filepath = Path('%s%s%s.xlsx'%(outputPath, outputXLS, suffix))  
+    if output_xls is not None:
+        filepath = Path('%s%s%s.xlsx'%(outputpath, output_xls, suffix))  
         filepath.parent.mkdir(parents=True, exist_ok=True)  
         df.to_excel(filepath)
         print("File written: %s"%(filepath))
 
 
-def addCoinSymbol(db, prices:dict):
-    '''
-    Adds a new column with the symbol name
+def add_coin_symbol(db: DbHelper, prices: dict):
+    """Adds a new column with the symbol name
+    
     Symbol name is retrieved from the database
 
+    db = instance of DbHelperArko
     prices = a dictionary with coin id from coingecko and prices
-    '''
+    """
     coins = db.query("SELECT coingeckoid, symbol FROM {}".format(db.table['coinCoingecko']))
-    for priceKey, priceVal in prices.items():
-        print(priceVal, priceKey)
-        if isinstance(priceVal, dict):
-            for coinKey, coinVal in coins:
-                if priceKey == coinKey:
-                    priceVal["symbol"] = coinVal
-        if isinstance(priceVal, list):
-            for coinKey, coinVal in coins:
-                if priceKey == coinKey:
-                    priceVal.append(coinVal)
+    for price_key, price_val in prices.items():
+        print(price_val, price_key)
+        if isinstance(price_val, dict):
+            for coin_key, coin_val in coins:
+                if price_key == coin_key:
+                    price_val["symbol"] = coin_val
+        if isinstance(price_val, list):
+            for coin_key, coin_val in coins:
+                if price_key == coin_key:
+                    price_val.append(coin_val)
 
     return prices
 
 
-def getPriceHistory(req, coins, curr, date):
-    '''
-    Get coingecko history price
+def get_price_hist(req: RequestHelper, coins, curr, date):
+    """Get coingecko history price
+
     one price per day, not suitable for tax in Netherlands on 31-12-20xx 23:00
     coins can be a list of strings or a single string
     Thumbnail image is available
@@ -121,7 +118,7 @@ def getPriceHistory(req, coins, curr, date):
     coins = one string or list of strings with assets for market base
     curr = one string or list of strings with assets for market quote
     date = historical date 
-    '''
+    """
     if not isinstance(coins, list):
         coins = [coins]
     if not isinstance(curr, list):
@@ -135,10 +132,10 @@ def getPriceHistory(req, coins, curr, date):
     i = 0
     for coin in coins:
         i += 1
-        showProgress(i, len(coins))
+        show_progress(i, len(coins))
         url = "https://api.coingecko.com/api/v3/coins/"+coin+"/history?date="+date+"&localization=false"
-        resp = req.getRequestResponse(url)
-        market_dataExist = "market_data" in resp
+        resp = req.get_request_response(url)
+        market_data_exist = "market_data" in resp
         #print("coin:", coin)
         #print("price of "+coin+" "+date+": ", resp['market_data']['current_price'][currency],currency)
         #print("MarketCap of "+coin+" "+date+": ", resp['market_data']['market_cap'][currency],currency)
@@ -154,7 +151,7 @@ def getPriceHistory(req, coins, curr, date):
                 price[c] = "no data"
 
             for c in curr:
-                if market_dataExist:
+                if market_data_exist:
                     if c in resp['market_data']['current_price']:
                         price[c] = resp['market_data']['current_price'][c]
 
@@ -163,16 +160,16 @@ def getPriceHistory(req, coins, curr, date):
     return prices
 
 
-def getPrice(req, coins, curr, **kwargs):
-    '''
-    Get coingecko current price
+def get_price(req: RequestHelper, coins, curr, **kwargs):
+    """Get coingecko current price
+
     Thumbnail image is available
 
     req = instance of RequestHelper
     coins = one string or list of strings with assets for market base
     curr = one string or list of strings with assets for market quote
     **kwargs = extra arguments in url 
-    '''
+    """
     # convert list to comma-separated string
     if isinstance(coins, list):
         coins = ','.join(coins)
@@ -186,27 +183,26 @@ def getPrice(req, coins, curr, **kwargs):
         
     url = "https://api.coingecko.com/api/v3/simple/price"
     url = req.api_url_params(url, kwargs)
-    resp = req.getRequestResponse(url)
+    resp = req.get_request_response(url)
     
     # remove status_code from dictionary
     resp.pop("status_code")
 
     # convert timestamp to date
-    resp = convertTimestampLastUpdated(resp)
+    resp = convert_timestamp_lastupdated(resp)
 
     return resp
 
 
-def getTokenPrice(req, chain, contracts, curr, **kwargs):
-    '''
-    Get coingecko current price of a token
+def get_token_price(req: RequestHelper, chain, contracts, curr, **kwargs):
+    """Get coingecko current price of a token
 
     req = instance of RequestHelper
     chain = chain where contracts are
     contracts = one string or list of strings with token contracts for market base
     curr = one string or list of strings with assets for market quote
     **kwargs = extra arguments in url 
-    '''
+    """
     # convert list to comma-separated string
     if isinstance(contracts, list):
         contracts = ','.join(contracts)
@@ -220,20 +216,20 @@ def getTokenPrice(req, chain, contracts, curr, **kwargs):
         
     url = "https://api.coingecko.com/api/v3/simple/token_price/"+chain
     url = req.api_url_params(url, kwargs)
-    resp = req.getRequestResponse(url)
+    resp = req.get_request_response(url)
 
     # remove status_code from dictionary
     resp.pop("status_code")
 
     # convert timestamp to date
-    resp = convertTimestampLastUpdated(resp)
+    resp = convert_timestamp_lastupdated(resp)
 
     return resp
 
 
-def getPriceHistoryMarketChart(req, chain, coins_contracts, curr, date):
-    '''
-    Get coingecko history price of a coin or a token
+def get_price_hist_marketchart(req: RequestHelper, chain, coins_contracts, curr, date):
+    """Get coingecko history price of a coin or a token
+    
     coins_contracts can be a list of strings or a single string
     If chain = "none" or None search for a coins otherwise search for token contracts
 
@@ -243,7 +239,7 @@ def getPriceHistoryMarketChart(req, chain, coins_contracts, curr, date):
     curr = one string or list of strings with assets for market quote
 >>>           (if list only first currency will be used)
     date = historical date 
-    '''
+    """
     if not isinstance(coins_contracts, list):
         contracts = [coins_contracts]
     if isinstance(curr, list):
@@ -266,13 +262,13 @@ def getPriceHistoryMarketChart(req, chain, coins_contracts, curr, date):
     i = 0
     for coin_contract in coins_contracts:
         i += 1
-        showProgress(i, len(coins_contracts))
+        show_progress(i, len(coins_contracts))
         if (chain=='none' or chain is None): 
             url = "https://api.coingecko.com/api/v3/coins/"+coin_contract+"/market_chart/range"
         else:
             url = "https://api.coingecko.com/api/v3/coins/"+chain+"/contract/"+coin_contract+"/market_chart/range"
         url = req.api_url_params(url, params)
-        resp = req.getRequestResponse(url)
+        resp = req.get_request_response(url)
 
         if resp['status_code'] == "error":
             # got no status from request, must be an error
@@ -282,7 +278,7 @@ def getPriceHistoryMarketChart(req, chain, coins_contracts, curr, date):
             if (len(price) > 0):
                 # convert timestamp to date
                 for p in price:
-                    p[0] = convertTimestamp(p[0], True)
+                    p[0] = convert_timestamp(p[0], True)
                 
                 prices[coin_contract] = price[0]
             else:
@@ -293,26 +289,25 @@ def getPriceHistoryMarketChart(req, chain, coins_contracts, curr, date):
 
 
 def __main__():
-    '''
-    Get Coingecko price history
+    """Get Coingecko price history
 
     Arguments:
     - date for historical prices
     - coin search prices for specfic coin
     - output file for saving results in a csv file
-    '''
+    """
     argparser = argparse.ArgumentParser()
     argparser.add_argument('-d', '--date', type=str, help='Historical date to search on Coingecko', default='2022-05-01')
     argparser.add_argument('-c', '--coin', type=str, help='List of coins to search on Coingecko')
-    argparser.add_argument('-oc', '--outputCSV', type=str, help='Filename and path to output CSV file', required=False)
-    argparser.add_argument('-ox', '--outputXLS', type=str, help='Filename and path to the output Excel file', required=False)
+    argparser.add_argument('-oc', '--output_csv', type=str, help='Filename and path to output CSV file', required=False)
+    argparser.add_argument('-ox', '--output_xls', type=str, help='Filename and path to the output Excel file', required=False)
     args = argparser.parse_args()
     date = args.date
-    coinStr = args.coin
-    outputCSV = args.outputCSV
-    outputXLS = args.outputXLS
-    currentDate = datetime.now().strftime("%Y-%m-%d %H:%M")
-    print("Current date:", currentDate)
+    coin_str = args.coin
+    output_csv = args.output_csv
+    output_xls = args.output_xls
+    current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+    print("Current date:", current_date)
     
     # init pandas displaying
     pd.set_option('display.max_rows', None)
@@ -323,14 +318,14 @@ def __main__():
     
     # check if database and table coins exists and has values
     db = DbHelper.DbHelperArko(config.DB_CONFIG, config.DB_TYPE)
-    dbExist = db.checkDb(table_name = db.table['coinCoingecko'])
-    print('Database and table coins exist: %s'%dbExist)
+    db_exist = db.check_db(table_name = db.table['coinCoingecko'])
+    print('Database and table coins exist: %s'%db_exist)
     
     # Determine which coins to retrieve prices for
     # From arguments, from database, or take default
-    if coinStr != None:
-        coins = re.split('[;,]', coinStr)
-    elif dbExist:
+    if coin_str != None:
+        coins = re.split('[;,]', coin_str)
+    elif db_exist:
         coins = db.query("SELECT coingeckoid FROM {}".format(db.table['coinCoingecko']))
         coins = [i[0] for i in coins]
     else:
@@ -341,53 +336,53 @@ def __main__():
     contracts = ["0x62858686119135cc00C4A3102b436a0eB314D402","0xacfc95585d80ab62f67a14c566c1b7a49fe91167"]
     
     print("* Current price of coins")
-    price = getPrice(req, coins, curr)
-    if dbExist:
-        price = addCoinSymbol(db, price)
+    price = get_price(req, coins, curr)
+    if db_exist:
+        price = add_coin_symbol(db, price)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
     print(df)
-    writeToFile(df, outputCSV, outputXLS, "_current_coins_%s"%(currentDate))
+    write_to_file(df, output_csv, output_xls, "_current_coins_%s"%(current_date))
     print()
 
     print("* History price of coins")
-    price = getPriceHistory(req, coins, curr, date)
+    price = get_price_hist(req, coins, curr, date)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
     print(date)
     print(df)
-    writeToFile(df, outputCSV, outputXLS, "_hist_%s"%(date))
+    write_to_file(df, output_csv, output_xls, "_hist_%s"%(date))
     print()
  
     print("* History price of coins via market_chart")
-    price = getPriceHistoryMarketChart(req, None, coins, curr[0], date)
-    if dbExist:
-        price = addCoinSymbol(db, price)
+    price = get_price_hist_marketchart(req, None, coins, curr[0], date)
+    if db_exist:
+        price = add_coin_symbol(db, price)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
     print(df)
-    writeToFile(df, outputCSV, outputXLS, "_hist_marketchart_%s"%(date))
+    write_to_file(df, output_csv, output_xls, "_hist_marketchart_%s"%(date))
     print()
       
     print("* Current price of token")
-    price = getTokenPrice(req, chain, contracts, curr)
+    price = get_token_price(req, chain, contracts, curr)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
     print(df)
-    writeToFile(df, outputCSV, outputXLS, "_current_token_%s"%(currentDate))
+    write_to_file(df, output_csv, output_xls, "_current_token_%s"%(current_date))
     print()
     
     print("* History price of token via market_chart")
-    price = getPriceHistoryMarketChart(req, chain, contracts, curr[0], date)
+    price = get_price_hist_marketchart(req, chain, contracts, curr[0], date)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
     print(df)
-    writeToFile(df, outputCSV, outputXLS, "_hist_marketchart_token_%s"%(date))
+    write_to_file(df, output_csv, output_xls, "_hist_marketchart_token_%s"%(date))
     print()
 
 

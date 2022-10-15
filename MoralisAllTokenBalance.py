@@ -1,4 +1,4 @@
-'''
+"""
 Created on Feb 18, 2022
 
 @author: arno
@@ -8,7 +8,7 @@ Get all ERC20 tokens and main (ETH or BNB or ...) balance of an address with Mor
 1: Normal balance
 2: ERC20 Token balance
 
-'''
+"""
 from web3 import Web3
 import requests
 import config
@@ -19,69 +19,69 @@ if (config.MORALIS_NODE_KEY=='' or config.MORALIS_API_DEF==''):
     sys.exit('No Moralis node key or API defined in config file. Aborting')
 
 # add your blockchain connection information
-chain = input("What chain you want to query(eth or bsc or polygon)?: ")
-moralisProvider = config.MORALIS_HTTP_PROVIDER + config.MORALIS_NODE_KEY + '/' + chain + '/mainnet'   
-w3 = Web3(Web3.HTTPProvider(moralisProvider))
+chain = input('What chain you want to query(eth or bsc or polygon)?: ')
+moralis_provider = config.MORALIS_HTTP_PROVIDER + config.MORALIS_NODE_KEY + '/' + chain + '/mainnet'   
+w3 = Web3(Web3.HTTPProvider(moralis_provider))
 print(w3.isConnected())
 
 header = {
   'x-api-key': config.MORALIS_API_DEF
 }
 
-ethAddress = Web3.toChecksumAddress(config.ETH_ADDRESS[8])
+eth_address = Web3.toChecksumAddress(config.ETH_ADDRESS[8])
 
 
 # 1: Normal balance
-balanceWei = w3.eth.getBalance(ethAddress)
-balance = Web3.fromWei(balanceWei,'ether')
+balance_wei = w3.eth.getBalance(eth_address)
+balance = Web3.fromWei(balance_wei,'ether')
 print('Balance: {}'.format(balance))
 print()
 
 # 2: ERC20 Token balance
-urlErc20balance = 'https://deep-index.moralis.io/api/v2/'+ ethAddress + '/erc20?chain=' + chain
-response = requests.request("GET", urlErc20balance, headers=header)
+url_erc20_balance = 'https://deep-index.moralis.io/api/v2/'+ eth_address + '/erc20?chain=' + chain
+response = requests.request('GET', url_erc20_balance, headers=header)
 resp = response.json()
 print('number of tokens: ', len(resp))
 for i in resp:
-    tknName  = i['name']
-    tknSymbol  = i['symbol']
-    tknAddr = i['token_address']
-    tknRawBalance = int(i['balance'])
-    tknDecimals = int(i['decimals'])
-    tknBalance = tknRawBalance / 10**tknDecimals
-    tknLogo = i['logo']
-    tknThumbnail = i['thumbnail']
-    #print("{} {}, {}, {}".format(tknBalance,tknSymbol,tknName,tknAddr))
-    print("%s : %-20f %10s , %s"%(tknAddr,tknBalance,tknSymbol,tknName))
+    tkn_name  = i['name']
+    tkn_symbol  = i['symbol']
+    tkn_addr = i['token_address']
+    tkn_raw_balance = int(i['balance'])
+    tkn_decimals = int(i['decimals'])
+    tkn_balance = tkn_raw_balance / 10**tkn_decimals
+    tkn_logo = i['logo']
+    tkn_thumbnail = i['thumbnail']
+    #print('{} {}, {}, {}'.format(tkn_balance,tkn_symbol,tkn_name,tkn_addr))
+    print('%s : %-20f %10s , %s'%(tkn_addr,tkn_balance,tkn_symbol,tkn_name))
 print()
 
 # 2: ERC721 Token balance
-urlErc721balance = 'https://deep-index.moralis.io/api/v2/'+ ethAddress + '/nft?chain=' + chain
-response = requests.request("GET", urlErc721balance, headers=header)
+url_erc721_balance = 'https://deep-index.moralis.io/api/v2/'+ eth_address + '/nft?chain=' + chain
+response = requests.request('GET', url_erc721_balance, headers=header)
 resp = response.json()
 #print(resp)
-txTotal = resp['total']
-txPage = resp['page']
-txPageSize = resp['page_size']
-print("Total nft %s, page %s, pagesize %s"%(txTotal,txPage,txPageSize))
+tx_total = resp['total']
+tx_page = resp['page']
+tx_page_size = resp['page_size']
+print('Total nft %s, page %s, pagesize %s'%(tx_total,tx_page,tx_page_size))
 print('number of nft: ', len(resp['result']))
 for i in resp['result']:
-    tknName  = i['name']
-    tknSymbol  = i['symbol']
-    tknAmount  = i['amount']
-    tknAddr = i['token_address']
-    tknId = i['token_id']
-    tknUri = i['token_uri']
-    tknMetadata = i['metadata']
-    tknSyncedAt = i['synced_at']
-    tknContractType = i['contract_type']
-    tknOwnerOf = i['owner_of']
-    tknBlockNumber = i['block_number']
-    tknBlockNumberMinted = i['block_number_minted']
-    tknIsValid = i['is_valid']
-    tknSyncing = i['syncing']
-    tknFrozen = i['frozen']
-    #print("{} {}, {}, {}".format(tknBalance,tknSymbol,tknName,tknAddr))
-    print("%s : %s %10s , %s , id: %s"%(tknAddr,tknAmount, tknSymbol, tknName, tknId))
+    tkn_name  = i['name']
+    tkn_symbol  = i['symbol']
+    tkn_amount  = i['amount']
+    tkn_addr = i['token_address']
+    tkn_id = i['token_id']
+    tkn_uri = i['token_uri']
+    tkn_metadata = i['metadata']
+    tkn_synced_at = i['synced_at']
+    tkn_contract_type = i['contract_type']
+    tkn_owner_of = i['owner_of']
+    tkn_block_number = i['block_number']
+    tkn_block_number_minted = i['block_number_minted']
+    tkn_is_valid = i['is_valid']
+    tkn_syncing = i['syncing']
+    tkn_frozen = i['frozen']
+    #print('{} {}, {}, {}'.format(tkn_balance,tkn_symbol,tkn_name,tkn_addr))
+    print('%s : %s %10s , %s , id: %s'%(tkn_addr,tkn_amount, tkn_symbol, tkn_name, tkn_id))
 print()
 

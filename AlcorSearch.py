@@ -1,11 +1,11 @@
-'''
+"""
 Created on July 23, 2022
 
 @author: arno
 
 Alcor search
 
-'''
+"""
 import config
 import RequestHelper
 import DbHelper
@@ -15,57 +15,55 @@ import sys
 import re
 
 
-def searchId(searchStr, assets):
-    '''
-    Search for coin in list of all assets
+def search_id(search_str: str, assets: list):
+    """Search for coin in list of all assets
 
-    searchStr = string to search in assets
+    search_str: str = string to search in assets
     assets = list of assets from Alcor
-    '''
-    s = (searchStr).lower()
-    resCoins = []
+    """
+    s = search_str.lower()
+    res_coins = []
     for asset in assets.values():
-        resCoin = [item for item in asset \
+        res_coin = [item for item in asset \
                     if (re.match(s, item['base_token']['symbol']['name'].lower()) or \
                         re.search(s, item['base_token']['str'].lower()) or \
                         re.match(s, item['quote_token']['symbol']['name'].lower()) or \
                         re.search(s, item['quote_token']['str'].lower()) )]
-        resCoins.extend(resCoin)
-    return resCoins
+        res_coins.extend(res_coin)
+    return res_coins
 
 
-def inputNumber(message: str, minimal: int = 1, maximum: int = 1):
-    '''
-    UI for asking row number
+def input_number(message: str, minimal: int = 1, maximum: int = 1):
+    """UI for asking row number
 
     message = string for printing on screen to ask for user input
     minimal = minimal allowed integer
     maximum = maximum allowed integer
-    '''
+    """
     while True:
-        userInput = input(message)
-        userInput = userInput.lower()
-        if (userInput == "n" or userInput == "new"):
-            userInput = "n"
-        elif (userInput == "q" or userInput == "quit"):
-            sys.exit("Exiting")
+        user_input = input(message)
+        user_input = user_input.lower()
+        if (user_input == 'n' or user_input == 'new'):
+            user_input = 'n'
+        elif (user_input == 'q' or user_input == 'quit'):
+            sys.exit('Exiting')
         else:
             try:
-                userInput = int(userInput)       
+                user_input = int(user_input)       
             except ValueError:
-                print("No correct input! Try again.")
+                print('No correct input! Try again.')
                 continue
             else:
-                if (userInput < minimal or userInput > maximum):
-                    print("No correct row number! Try again.")
+                if (user_input < minimal or user_input > maximum):
+                    print('No correct row number! Try again.')
                     continue
-        return userInput 
+        return user_input 
         break
 
 
-def insertCoin(req, db, params):
-    '''
-    Insert a new coin to the coins table
+def insert_coin(req: RequestHelper, db: DbHelper, params: dict):
+    """Insert a new coin to the coins table
+    
     And download the thumb and large picture of the coin
 
 
@@ -78,12 +76,12 @@ def insertCoin(req, db, params):
              'fiat': False,
              'route': 'https://api.cryptowat.ch/assets/doge'
             }
-    '''
+    """
     print(params)
-    #safeFile(req, params['thumb'], "CoinImages", "coingecko_%s_%s.png"%(params['id'],"thumb"))    
-    #safeFile(req, params['large'], "CoinImages", "coingecko_%s_%s.png"%(params['id'],"large"))    
-    query = "INSERT INTO {} (alcorid, base, quote, chain) " \
-            "VALUES(?,?,?,?)".format(db.table['coinAlcor'])
+    #safeFile(req, params['thumb'], 'CoinImages', 'coingecko_%s_%s.png'%(params['id'],'thumb'))    
+    #safeFile(req, params['large'], 'CoinImages', 'coingecko_%s_%s.png'%(params['id'],'large'))    
+    query = 'INSERT INTO {} (alcorid, base, quote, chain) ' \
+            'VALUES(?,?,?,?)'.format(db.table['coinAlcor'])
     args = (params['id'], 
             params['base_token']['str'], 
             params['quote_token']['str'], 
@@ -92,9 +90,9 @@ def insertCoin(req, db, params):
     db.commit()
 
 
-def search(req, db, coinSearch, assets):
-    '''
-    Search coins in own database (if table exists)
+def search(req: RequestHelper, db: DbHelper, coin_search: str, assets: dict):
+    """Search coins in own database (if table exists)
+    
     Show the results
     
     Search coins from Alcor assets (already in assets)
@@ -105,36 +103,36 @@ def search(req, db, coinSearch, assets):
 
     req = instance of RequestHelper
     db = instance of DbHelperArko
-    coinSearch = string to search in assets
+    coin_search = string to search in assets
     assets = dictionary where each key is a chain with a list of string with assets from Alcor
-    '''
-    pd.set_option("display.max_colwidth", 20)
+    """
+    pd.set_option('display.max_colwidth', 20)
 
     # Check if coin already in database and add to search result on row 0
-    dbResult = []
-    if db.checkTable(db.table['coinAlcor']):
-        coinSearchStr = "%{}%".format(coinSearch)
-        coinSearchQuery = '''SELECT * FROM {} WHERE
+    db_result = []
+    if db.check_table(db.table['coinAlcor']):
+        coin_search_str = '%{}%'.format(coin_search)
+        coin_search_query = '''SELECT * FROM {} WHERE
                                 base like ? or
                                 quote like ?
                           '''.format(db.table['coinAlcor'])
-        dbResult = db.query(coinSearchQuery, \
-                            (coinSearchStr, coinSearchStr))
-        if (len(dbResult) > 0):
-            dbResultdf = pd.DataFrame(dbResult)
-            print("Search in database:")
-            print(dbResultdf)
+        db_result = db.query(coin_search_query, \
+                            (coin_search_str, coin_search_str))
+        if (len(db_result) > 0):
+            db_resultdf = pd.DataFrame(db_result)
+            print('Search in database:')
+            print(db_resultdf)
 
     # Do search on Alcor assets in memory
-    cwResultCoin = searchId(coinSearch, assets)
-    if (len(cwResultCoin) > 0):
-        cwResultCoinPrint = []
-        for item in cwResultCoin:
+    cw_result_coin = search_id(coin_search, assets)
+    if (len(cw_result_coin) > 0):
+        cw_result_coin_print = []
+        for item in cw_result_coin:
             print(type(item))
             print(item)
             print(item['base_token'])
             print('--------------------')
-            cwResultCoinPrint.append(
+            cw_result_coin_print.append(
                 {'quote': item['quote_token']['str'], # item['quote_token']['symbol']['name']
                 'base': item['base_token']['str'], # item['base_token']['symbol']['name']
                 'chain': item['chain'],
@@ -145,79 +143,78 @@ def search(req, db, coinSearch, assets):
                 'frozen': item['frozen']
                 }
             )
-        cwResultCoindf = pd.DataFrame(cwResultCoinPrint)
-        cwResultCoindf_print = cwResultCoindf #.filter(['quote_token', 'base_token'], axis=1)
-        print("Search from Alcor:")
-        print(cwResultCoindf_print)
+        cw_result_coindf = pd.DataFrame(cw_result_coin_print)
+        cw_result_coindf_print = cw_result_coindf #.filter(['quote_token', 'base_token'], axis=1)
+        print('Search from Alcor:')
+        print(cw_result_coindf_print)
     else:
-        print("Coin not found")
+        print('Coin not found')
     
     # ask user which row is the correct answer
-    userInput = inputNumber("Select correct coin to store in database, or (N)ew search, or (Q)uit: ",
-                            0, len(cwResultCoin)-1)
+    user_input = input_number('Select correct coin to store in database, or (N)ew search, or (Q)uit: ',
+                            0, len(cw_result_coin)-1)
 
     # if coin is selected, add to database (replace or add new row in db?)
     # go back to search question / exit
-    if userInput == "n":
-        print("New search")
-    elif userInput == "q":
-        sys.exit("Exiting")
+    if user_input == 'n':
+        print('New search')
+    elif user_input == 'q':
+        sys.exit('Exiting')
     else:
         # coin selected add to
-        print("Number chosen = %s"%userInput)
-        coin = cwResultCoin[userInput]
+        print('Number chosen = %s'%user_input)
+        coin = cw_result_coin[user_input]
         print(coin)
 
         # check if database exist, in case of sqlite create database
-        if not db.hasConnection():
-            if db.getDbType() == DbHelper.DbType.sqlite:
+        if not db.has_connection():
+            if db.get_db_type() == DbHelper.DbType.sqlite:
                 db.open()
             else:
-                print("No database %s, do new search"%db.getDbType())
+                print('No database %s, do new search'%db.get_db_type())
 
         # check if coin name, symbol is already in our database
-        if db.hasConnection():
+        if db.has_connection():
             # if table doesn't exist, create table coins
-            if not db.checkTable(db.table['coinAlcor']):
-                db.createTable(db.table['coinAlcor'])
-                db.chkTable[db.table['coinAlcor']] = True
+            if not db.check_table(db.table['coinAlcor']):
+                db.create_table(db.table['coinAlcor'])
+                db.chk_table[db.table['coinAlcor']] = True
             
-            dbResult = db.query("SELECT * FROM %s WHERE alcorid='%s'"%
+            db_result = db.query('SELECT * FROM %s WHERE alcorid="%s"'%
                                 (db.table['coinAlcor'], coin['id']))
-            if len(dbResult):
-                print("Database already has a row with the coin %s"%(coin['ticker_id']))
+            if len(db_result):
+                print('Database already has a row with the coin %s'%(coin['ticker_id']))
             else:
                 # add new row to table coins
-                insertCoin(req, db, coin)
+                insert_coin(req, db, coin)
                 
 
 def __main__():
-    '''
-    Get Alcor search assets and store in database
+    """Get Alcor search assets and store in database
 
     Arguments:
     - coin to search
     - chain to search or if not present all chains
-    '''
+    """
     argparser = argparse.ArgumentParser()
     argparser.add_argument('-c', '--coin', type=str, help='Coin name to search on Alcor')
     argparser.add_argument('-ch', '--chain', type=str, help='Chain name to search on Alcor')
     args = argparser.parse_args()
-    coinSearch = args.coin
-    chainStr = args.chain
+    coin_search = args.coin
+    chain_str = args.chain
 
     # Select chain from argument or take default all chains
-    if chainStr != None:
-        chains = re.split('[;,]', chainStr)
+    if chain_str != None:
+        chains = re.split('[;,]', chain_str)
     else:
         chains = config.ALCOR_CHAINS
 
     db = DbHelper.DbHelperArko(config.DB_CONFIG, config.DB_TYPE)
-    dbExist = db.checkDb()
-    print("Database exists:", dbExist)
-    print("Database exists:", db.hasConnection())
-    dbTableExist = db.checkDb(table_name = db.table['coinAlcor'])
-    print("Table coins exist:", dbTableExist)
+    db_exist = db.check_db()
+    print('Database exists:', db_exist)
+    print('Database exists:', db.has_connection())
+    db_table_exist = db.check_db(table_name = db.table['coinAlcor'])
+    print('Table coins exist:', db_table_exist)
 
     # init pandas displaying
     pd.set_option('display.max_rows', None)
@@ -229,18 +226,18 @@ def __main__():
     req = RequestHelper.RequestHelper()
     
     # get all assets from Alcor
-    coinassets = {}
+    coin_assets = {}
     for chain in chains:
-        urlList = config.ALCOR_URL.replace('?', chain) + "/markets"
-        print(urlList)
-        resp = req.getRequestResponse(urlList)
-        coinassets[chain] = resp['result']
+        url_list = config.ALCOR_URL.replace('?', chain) + '/markets'
+        print(url_list)
+        resp = req.get_request_response(url_list)
+        coin_assets[chain] = resp['result']
     
-    while coinassets != None:
-        if coinSearch == None:
-            coinSearch = input("Search for coin: ")
-        search(req, db, coinSearch, coinassets)
-        coinSearch = None
+    while coin_assets != None:
+        if coin_search == None:
+            coin_search = input('Search for coin: ')
+        search(req, db, coin_search, coin_assets)
+        coin_search = None
 
 
 if __name__=='__main__':
