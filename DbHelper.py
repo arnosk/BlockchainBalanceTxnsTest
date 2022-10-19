@@ -7,12 +7,12 @@ Database Helper Utilities Class
 
 more info: https://github.com/xfoobar/slim_helper/blob/main/slim_helper/db_helper.py
 """
-from enum import Enum,auto
+from enum import Enum, auto
 
 
 class DbType(Enum):
     """Class for enumerating databse types
-    
+
     Possible types:
     SQLite and PostgreSQL
     """
@@ -46,7 +46,7 @@ class DbHelper():
 
     """
 
-    def __init__(self, config:dict, db_type:str):
+    def __init__(self, config: dict, db_type: str):
         self.conn = None
         self.config = config
         self.chk_table = {}
@@ -69,7 +69,7 @@ class DbHelper():
             self.conn.close()
             self.conn = None
 
-    def open(self, create = True):
+    def open(self, create=True):
         """Function to open a connection to the database
 
         create = For SQLite: When create is True it creates a new database when it doesnot exists
@@ -80,12 +80,12 @@ class DbHelper():
                 dbname = self.config['dbname']
                 if create:
                     self.conn = sqlite3.connect(dbname, timeout=10)
-                    print('Open sqlite3: Database connected %s'%self.conn)
+                    print('Open sqlite3: Database connected %s' % self.conn)
                 else:
-                    self.conn = sqlite3.connect('file:%s?mode=rw'%dbname, uri=True)
-                    print('Open sqlite3: Database connected %s'%self.conn)
-                
-                
+                    self.conn = sqlite3.connect(
+                        'file:%s?mode=rw' % dbname, uri=True)
+                    print('Open sqlite3: Database connected %s' % self.conn)
+
             elif self.db_type == DbType.postgresql:
                 import psycopg2
                 # In PostgreSQL, default username is 'postgres' and password is 'postgres'.
@@ -99,11 +99,11 @@ class DbHelper():
                 password = self.config['password']
                 try:
                     self.conn = psycopg2.connect(
-                        host = host,
-                        port = port,
-                        dbname = dbname,
-                        user = user,
-                        password = password
+                        host=host,
+                        port=port,
+                        dbname=dbname,
+                        user=user,
+                        password=password
                     )
                     print('Open postgresql: Database connected')
                 except Exception as e:
@@ -113,8 +113,7 @@ class DbHelper():
         else:
             raise RuntimeError('Database connection already exists')
 
-
-    def check_db(self, table_name: str = None):
+    def check_db(self, table_name: str = ""):
         """Check database
 
         Check wether the database exists and can be found
@@ -128,7 +127,7 @@ class DbHelper():
         # check existance of database
         if self.conn is None:
             try:
-                self.open(create = False)
+                self.open(create=False)
             except:
                 check = False
 
@@ -139,6 +138,8 @@ class DbHelper():
                     query_chk_table = 'SELECT name FROM sqlite_master WHERE type="table" AND name=?'
                 elif self.db_type == DbType.postgresql:
                     query_chk_table = 'SELECT exists(SELECT * FROM information_schema.tables WHERE table_name=?)'
+                else:
+                    raise RuntimeError('Database type unknown')
 
                 if self.query(query_chk_table, (table_name,)):
                     # Database exists and table exists
@@ -155,10 +156,9 @@ class DbHelper():
 
         return check
 
-
     def check_table(self, table_name):
         """Check wether the a table exists
-        
+
         Uses a query or a memory field if already queried
 
         table_name = string with a name of a table to check if it iexists in database
@@ -167,10 +167,8 @@ class DbHelper():
             return self.chk_table[table_name]
         else:
             return self.check_db(table_name)
-        
 
-
-    def execute(self, sql: str, params = None) -> int:
+    def execute(self, sql: str, params=None) -> int:
         """Execute a query
 
         Executes a query and returns number of rows or number of changes
@@ -186,14 +184,18 @@ class DbHelper():
             cursor.execute(sql, params)
         else:
             cursor.execute(sql)
+
         if self.db_type == DbType.sqlite:
             result = self.conn.total_changes
         elif self.db_type == DbType.postgresql:
             result = cursor.rowcount
+        else:
+            result = -1
+            
         cursor.close()
         return result
 
-    def query(self, sql: str, params = None):
+    def query(self, sql: str, params=None):
         """Execute a query and returns the result
 
         sql = query to execute,
@@ -229,13 +231,13 @@ class DbHelperArko(DbHelper):
     With special features/functions for Arko program
     """
 
-    def __init__(self, config:dict, db_type:str):
-        self.table = {'coinCoingecko':'coinCoingecko',
-                      'coinCryptowatch':'coinCryptowatch',
-                      'coinAlcor':'coinAlcor'}
+    def __init__(self, config: dict, db_type: str):
+        self.table = {'coinCoingecko': 'coinCoingecko',
+                      'coinCryptowatch': 'coinCryptowatch',
+                      'coinAlcor': 'coinAlcor'}
         super().__init__(config, db_type)
 
-    def createTable(self, table_name: str):
+    def create_table(self, table_name: str):
         """Create a new table
 
         table_name = table to create
@@ -249,7 +251,7 @@ class DbHelperArko(DbHelper):
             primary_key = 'INT AUTO_INCREMENT PRIMARY KEY'
 
         query = ''
-        if table_name == self.table['coinCoingecko']: 
+        if table_name == self.table['coinCoingecko']:
             query = '''CREATE TABLE {} (
                         id {},
                         coingeckoid VARCHAR(80) NOT NULL,
@@ -257,14 +259,14 @@ class DbHelperArko(DbHelper):
                         symbol VARCHAR(40) NOT NULL
                         )
                     '''.format(table_name, primary_key)
-        elif table_name == self.table['coinCryptowatch']: 
+        elif table_name == self.table['coinCryptowatch']:
             query = '''CREATE TABLE {} (
                         id {},
                         name VARCHAR(80) NOT NULL,
                         symbol VARCHAR(40) NOT NULL
                         )
                     '''.format(table_name, primary_key)
-        elif table_name == self.table['coinAlcor']: 
+        elif table_name == self.table['coinAlcor']:
             query = '''CREATE TABLE {} (
                         id {},
                         chain VARCHAR(20) NOT NULL,
@@ -273,12 +275,13 @@ class DbHelperArko(DbHelper):
                         quote VARCHAR(80) NOT NULL
                         )
                     '''.format(table_name, primary_key)
-            
+
         self.execute(query)
 
 
 def __main__():
     pass
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     __main__()

@@ -6,13 +6,15 @@ Created on July 23, 2022
 Alcor search
 
 """
-import config
-import RequestHelper
-import DbHelper
-import pandas as pd
 import argparse
-import sys
 import re
+import sys
+
+import pandas as pd
+
+import config
+import DbHelper
+import RequestHelper
 
 
 def search_id(search_str: str, assets: list):
