@@ -7,12 +7,13 @@ Base Class CoinPrice
 
 """
 import sys
+from abc import ABC, abstractmethod
 
 import DbHelper
 import RequestHelper
 
 
-class CoinPrice:
+class CoinPrice(ABC):
     """Base class for looking up the price of a coin on an exchange or provider
     """
 
