@@ -42,7 +42,7 @@ class CoinSearchCoingecko(CoinSearch):
     """
 
     def __init__(self) -> None:
-        pass
+        super().__init__()
 
     def save_file(self, req: RequestHelper, url: str, folder: str, filename: str):
         """Download and safe a file from internet
@@ -58,27 +58,13 @@ class CoinSearchCoingecko(CoinSearch):
 
         url = url.split('?')[0]
         ext = url.split('.')[-1]
-        file = '%s\%s.%s' % (folder, filename, ext)
+        file = '%s\\%s.%s' % (folder, filename, ext)
 
         scraper = cfscrape.create_scraper()
         cfurl = scraper.get(url).content
 
         with open(file, 'wb') as f:
             f.write(cfurl)
-
-        """
-        r = req.get_request_response(url, downloadFile=True, stream=True)
-        if r.ok:
-            print('Saving file from url: %s as file: %s'%(url, file))
-            with open(file, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=1024 * 8):
-                    if chunk:
-                        f.write(chunk)
-                        f.flush()
-                        os.fsync(f.fileno())
-        else:  # HTTP status code 4XX/5XX
-            print('Download failed: status code {}\n{}'.format(r.status_code, r.text))
-        """
 
     def insert_coin(self, req: RequestHelper, db: DbHelperArko, params: dict):
         """Insert a new coin to the coins table
@@ -174,7 +160,7 @@ class CoinSearchCoingecko(CoinSearch):
                                     coingeckoid like ? or
                                     name like ? or
                                     symbol like ?
-                            '''.format(db.table['coinCoingecko'])
+                                '''.format(db.table['coinCoingecko'])
             db_result = db.query(coin_search_query,
                                  (coin_search_str, coin_search_str, coin_search_str))
             if (len(db_result) > 0):
@@ -263,9 +249,9 @@ def __main__():
     coin_search = args.coin
 
     # init session
-    req = RequestHelper()
     cs = CoinSearchCoingecko()
     db = DbHelperArko(config.DB_CONFIG, config.DB_TYPE)
+    req = RequestHelper()
 
     db_exist = db.check_db()
     print('Database exists:', db_exist)

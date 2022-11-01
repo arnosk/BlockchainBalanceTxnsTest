@@ -23,7 +23,7 @@ class CoinSearchCryptowatch(CoinSearch):
     """
 
     def __init__(self) -> None:
-        pass
+        super().__init__()
 
     def insert_coin(self, req: RequestHelper, db: DbHelperArko, params: dict):
         """Insert a new coin to the coins table
@@ -157,9 +157,9 @@ def __main__():
     coin_search = args.coin
 
     # init session
-    req = RequestHelper()
     cs = CoinSearchCryptowatch()
     db = DbHelperArko(config.DB_CONFIG, config.DB_TYPE)
+    req = RequestHelper()
     req.update_header({'X-CW-API-Key': config.CRYPTOWATCH_API})
 
     db_exist = db.check_db()

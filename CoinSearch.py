@@ -7,19 +7,21 @@ Base Class CoinSearch
 
 """
 import sys
+from abc import ABC, abstractmethod
 
-import DbHelper
-import RequestHelper
+from DbHelper import DbHelperArko
+from RequestHelper import RequestHelper
 
 
-class CoinSearch:
+class CoinSearch(ABC):
     """Base class for searching a coin on an exchange or provider
     """
 
     def __init__(self) -> None:
         pass
 
-    def search(self, req: RequestHelper, db: DbHelper, coin_search: str, assets: dict):
+    @abstractmethod
+    def search(self, req: RequestHelper, db: DbHelperArko, coin_search: str, assets: dict):
         """Searching coins on exchange
 
         Search coins in own database (if table exists)
@@ -38,7 +40,8 @@ class CoinSearch:
         """
         pass
 
-    def insertCoin(self, req: RequestHelper, db: DbHelper, params: dict):
+    @abstractmethod
+    def insert_coin(self, req: RequestHelper, db: DbHelperArko, params: dict):
         """Insert coin in database
 
         Insert a new coin to the coins table

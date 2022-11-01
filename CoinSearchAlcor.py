@@ -23,7 +23,7 @@ class CoinSearchAlcor(CoinSearch):
     """
 
     def __init__(self) -> None:
-        pass
+        super().__init__()
 
     def insert_coin(self, req: RequestHelper, db: DbHelperArko, params: dict):
         """Insert a new coin to the coins table
@@ -195,9 +195,9 @@ def __main__():
         chains = config.ALCOR_CHAINS
 
     # init session
-    req = RequestHelper()
     cs = CoinSearchAlcor()
     db = DbHelperArko(config.DB_CONFIG, config.DB_TYPE)
+    req = RequestHelper()
 
     db_exist = db.check_db()
     print('Database exists:', db_exist)

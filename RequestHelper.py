@@ -6,6 +6,7 @@ Created on Apr 21, 2022
 Request URL Helper to get response from API 
 """
 import time
+from typing import Dict
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -42,7 +43,7 @@ class RequestHelper():
         """
         self.session.headers.update(params)
 
-    def get_request_response(self, url, download_file=False, stream=False):
+    def get_request_response(self, url, stream=False) -> dict:
         """general request url function 
 
         should be a class, with _init etc
@@ -56,7 +57,8 @@ class RequestHelper():
         #print('Inside RequestHelper.getRequestResponse')
         #print('URL: ', url)
 
-        resp = []
+        resp = {}
+        response = requests.Response
         request_timeout = 120
 
         try:
@@ -65,8 +67,8 @@ class RequestHelper():
                     url, timeout=request_timeout, stream=stream, verify=True)
                 if response.status_code == 429:
                     if 'Retry-After' in response.headers.keys():
-                        sleepTime = int(response.headers['Retry-After'])+1
-                        self.sleep_print_time(sleepTime)
+                        sleep_time = int(response.headers['Retry-After'])+1
+                        self.sleep_print_time(sleep_time)
                     else:
                         raise requests.exceptions.RequestException
                 else:
@@ -76,39 +78,41 @@ class RequestHelper():
             print(response.text)
             raise
         except Exception:
-            print('Header exception:', response.headers)
+            print('Exception:', response.headers)
             print(response.text)
             raise
 
-        if download_file:
-            return response
-
         try:
-            resp = response.json()
+            # get json from response, with type dict (mostly) or type list (Alcor exchange)
+            resp_unknown = response.json()
+
+            # when return type is a list, convert to dict
+            if isinstance(resp_unknown, list):
+                resp.update({'result': resp_unknown})
+            else:
+                resp = resp_unknown
+
         except Exception as e:
             print('JSON Exception: ', e)
 
         try:
             response.raise_for_status()
-            if isinstance(resp, list):
-                resp = {'result': resp}
-
-            resp['status_code'] = response.status_code
+            resp.update({'status_code': response.status_code})
 
         except requests.exceptions.HTTPError as e:
             print('No status Exception: ', e)
 
             # check if error key is in result dictionary
             if 'error' in resp:
-                resp['status_code'] = 'error'
+                resp.update({'status_code': 'error'})
             else:
-                resp['status_code'] = 'no status'
+                resp.update({'status_code': 'no status'})
 
         except Exception as e:
             print('Other Exception: ', e)  # , response.json())
             # raise
-            resp['status_code'] = 'error'  # response.text
-            resp['prices'] = ''
+            resp.update({'status_code': 'error'})
+            resp.update({'prices': []})
 
         return resp
 
