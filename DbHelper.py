@@ -7,6 +7,7 @@ Database Helper Utilities Class
 
 more info: https://github.com/xfoobar/slim_helper/blob/main/slim_helper/db_helper.py
 """
+from abc import ABC, abstractmethod
 from enum import Enum, auto
 
 
@@ -24,8 +25,8 @@ class DbType(Enum):
         return member in cls._member_names_
 
 
-class DbHelper():
-    """Class for database actions
+class DbHelper(ABC):
+    """Abstract Class for database actions
 
     constructor:
         config(Dict): Database connection params
@@ -88,6 +89,7 @@ class DbHelper():
 
             elif self.db_type == DbType.postgresql:
                 import psycopg2
+
                 # In PostgreSQL, default username is 'postgres' and password is 'postgres'.
                 # And also there is a default database exist named as 'postgres'.
                 # Default host is 'localhost' or '127.0.0.1'
