@@ -32,8 +32,11 @@ import cfscrape
 import pandas as pd
 
 import config
+import DbHelper
 from CoinSearch import CoinSearch
-from DbHelper import DbHelperArko, DbType
+from Db import Db
+from DbPostgresql import DbPostgresql
+from DbSqlite3 import DbSqlite3
 from RequestHelper import RequestHelper
 
 
@@ -42,6 +45,7 @@ class CoinSearchCoingecko(CoinSearch):
     """
 
     def __init__(self) -> None:
+        self.table_name = DbHelper.DbTableName.coinCoingecko.name
         super().__init__()
 
     def save_file(self, req: RequestHelper, url: str, folder: str, filename: str):
@@ -66,13 +70,13 @@ class CoinSearchCoingecko(CoinSearch):
         with open(file, 'wb') as f:
             f.write(cfurl)
 
-    def insert_coin(self, req: RequestHelper, db: DbHelperArko, params: dict):
+    def insert_coin(self, req: RequestHelper, db: Db, params: dict):
         """Insert a new coin to the coins table
 
         And download the thumb and large picture of the coin
 
         req = instance of RequestHelper
-        db = instance of DbHelperArko
+        db = instance of Db
         params = dictionary with retrieved coin info from coingecko
                 {'id': 'dogecoin',
                 'name': 'Dogecoin',
@@ -87,20 +91,19 @@ class CoinSearchCoingecko(CoinSearch):
         self.save_file(req, params['large'], 'CoinImages',
                        'coingecko_%s_%s' % (params['id'], 'large'))
         query = 'INSERT INTO {} (coingeckoid, name, symbol) ' \
-                'VALUES(?,?,?)'.format(db.table['coinCoingecko'])
+                'VALUES(?,?,?)'.format(self.table_name)
         args = (params['id'], params['name'], params['symbol'])
         db.execute(query, args)
         db.commit()
 
-    def download_images(self, req: RequestHelper, db: DbHelperArko):
+    def download_images(self, req: RequestHelper, db: Db):
         """Download image files for all coins in database from Coingecko
 
         req = instance of RequestHelper
-        db = instance of DbHelperArko
+        db = instance of Db
         """
         # Get all coingeckoid's from database
-        coins = db.query('SELECT coingeckoid FROM {}'.format(
-            db.table['coinCoingecko']))
+        coins = db.query('SELECT coingeckoid FROM {}'.format(self.table_name))
         coins = [i[0] for i in coins]
 
         # Retrieve coin info from coingecko
@@ -135,7 +138,7 @@ class CoinSearchCoingecko(CoinSearch):
         res_coins = resp['coins']
         return res_coins
 
-    def search(self, req: RequestHelper, db: DbHelperArko, coin_search: str):
+    def search(self, req: RequestHelper, db: Db, coin_search: str):
         """Search coins in own database (if table exists)
 
         Show the results
@@ -154,13 +157,13 @@ class CoinSearchCoingecko(CoinSearch):
 
         # Check if coin already in database and add to search result on row 0
         db_result = []
-        if db.check_table(db.table['coinCoingecko']):
+        if db.check_table(self.table_name):
             coin_search_str = '%{}%'.format(coin_search)
             coin_search_query = '''SELECT * FROM {} WHERE
                                     coingeckoid like ? or
                                     name like ? or
                                     symbol like ?
-                                '''.format(db.table['coinCoingecko'])
+                                '''.format(self.table_name)
             db_result = db.query(coin_search_query,
                                  (coin_search_str, coin_search_str, coin_search_str))
             if (len(db_result) > 0):
@@ -192,26 +195,24 @@ class CoinSearchCoingecko(CoinSearch):
 
             # check if database exist, in case of sqlite create database
             if not db.has_connection():
-                if db.get_db_type() == DbType.sqlite:
-                    db.open()
-                else:
-                    print('No database %s, do new search' % db.get_db_type())
+                db.open()
 
             # check if coingecko id is already in our database
             if db.has_connection():
                 # if table doesn't exist, create table coins
-                if not db.check_table(db.table['coinCoingecko']):
-                    db.create_table(db.table['coinCoingecko'])
-                    db.chk_table[db.table['coinCoingecko']] = True
+                if not db.check_table(self.table_name):
+                    DbHelper.create_table(db, self.table_name)
 
                 db_result = db.query('SELECT * FROM %s WHERE coingeckoid="%s"' %
-                                     (db.table['coinCoingecko'], coin['id']))
+                                     (self.table_name, coin['id']))
                 if len(db_result):
                     print('Database already has a row with the coin %s' %
                           (coin['id']))
                 else:
                     # add new row to table coins
                     self.insert_coin(req, db, coin)
+            else:
+                print('No database connection')
 
     def get_all_assets(self, req: RequestHelper):
         """Get all assets from Coingecko
@@ -250,13 +251,19 @@ def __main__():
 
     # init session
     cs = CoinSearchCoingecko()
-    db = DbHelperArko(config.DB_CONFIG, config.DB_TYPE)
     req = RequestHelper()
+    if config.DB_TYPE == 'sqlite':
+        db = DbSqlite3(config.DB_CONFIG)
+    elif config.DB_TYPE == 'postgresql':
+        db = DbPostgresql(config.DB_CONFIG)
+    else:
+        print('No database configuration')
+        raise
 
     db_exist = db.check_db()
     print('Database exists:', db_exist)
     print('Database exists:', db.has_connection())
-    db_table_exist = db.check_db(table_name=db.table['coinCoingecko'])
+    db_table_exist = db.check_table(cs.table_name)
     print('Table coins exist:', db_table_exist)
 
     if args.image:

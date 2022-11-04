@@ -13,8 +13,11 @@ import sys
 import pandas as pd
 
 import config
+import DbHelper
 from CoinSearch import CoinSearch
-from DbHelper import DbHelperArko, DbType
+from Db import Db
+from DbPostgresql import DbPostgresql
+from DbSqlite3 import DbSqlite3
 from RequestHelper import RequestHelper
 
 
@@ -23,15 +26,16 @@ class CoinSearchCryptowatch(CoinSearch):
     """
 
     def __init__(self) -> None:
+        self.table_name = DbHelper.DbTableName.coinCryptowatch.name
         super().__init__()
 
-    def insert_coin(self, req: RequestHelper, db: DbHelperArko, params: dict):
+    def insert_coin(self, req: RequestHelper, db: Db, params: dict):
         """Insert a new coin to the coins table
 
         And download the thumb and large picture of the coin
 
         req = instance of RequestHelper
-        db = instance of DbHelperArko
+        db = instance of Db
         params = dictionary with retrieved coin info from Cryptowatch
                 {'id': 62,
                 'symbol': 'doge',
@@ -44,7 +48,7 @@ class CoinSearchCryptowatch(CoinSearch):
         #safeFile(req, params['thumb'], 'CoinImages', 'coingecko_%s_%s.png'%(params['id'],'thumb'))
         #safeFile(req, params['large'], 'CoinImages', 'coingecko_%s_%s.png'%(params['id'],'large'))
         query = 'INSERT INTO {} (name, symbol) ' \
-                'VALUES(?,?)'.format(db.table['coinCryptowatch'])
+                'VALUES(?,?)'.format(self.table_name)
         args = (params['name'], params['symbol'])
         db.execute(query, args)
         db.commit()
@@ -61,7 +65,7 @@ class CoinSearchCryptowatch(CoinSearch):
                          re.match(s, item['symbol'].lower()))]
         return res_coins
 
-    def search(self, req: RequestHelper, db: DbHelperArko, coin_search: str, assets: list):
+    def search(self, req: RequestHelper, db: Db, coin_search: str, assets: list):
         """Search coins in own database (if table exists)
 
         Show the results
@@ -73,7 +77,7 @@ class CoinSearchCryptowatch(CoinSearch):
         To add that coin to the coins table, if it doesn't already exists
 
         req = instance of RequestHelper
-        db = instance of DbHelperArko
+        db = instance of Db
         coin_search = string to search in assets
         assets = list of string with assets from Cryptowatch
         """
@@ -81,12 +85,12 @@ class CoinSearchCryptowatch(CoinSearch):
 
         # Check if coin already in database and add to search result on row 0
         db_result = []
-        if db.check_table(db.table['coinCryptowatch']):
+        if db.check_table(self.table_name):
             coin_search_str = '%{}%'.format(coin_search)
             coin_search_query = '''SELECT * FROM {} WHERE
                                     name like ? or
                                     symbol like ?
-                            '''.format(db.table['coinCryptowatch'])
+                            '''.format(self.table_name)
             db_result = db.query(coin_search_query,
                                  (coin_search_str, coin_search_str))
             if (len(db_result) > 0):
@@ -122,26 +126,24 @@ class CoinSearchCryptowatch(CoinSearch):
 
             # check if database exist, in case of sqlite create database
             if not db.has_connection():
-                if db.get_db_type() == DbType.sqlite:
-                    db.open()
-                else:
-                    print('No database %s, do new search' % db.get_db_type())
+                db.open()
 
             # check if coin name, symbol is already in our database
             if db.has_connection():
                 # if table doesn't exist, create table coins
-                if not db.check_table(db.table['coinCryptowatch']):
-                    db.create_table(db.table['coinCryptowatch'])
-                    db.chk_table[db.table['coinCryptowatch']] = True
+                if not db.check_table(self.table_name):
+                    DbHelper.create_table(db, self.table_name)
 
                 db_result = db.query('SELECT * FROM %s WHERE name="%s"' %
-                                     (db.table['coinCryptowatch'], coin['name']))
+                                     (self.table_name, coin['name']))
                 if len(db_result):
                     print('Database already has a row with the coin %s' %
                           (coin['name']))
                 else:
                     # add new row to table coins
                     self.insert_coin(req, db, coin)
+            else:
+                print('No database connection')
 
 
 def __main__():
@@ -158,14 +160,20 @@ def __main__():
 
     # init session
     cs = CoinSearchCryptowatch()
-    db = DbHelperArko(config.DB_CONFIG, config.DB_TYPE)
     req = RequestHelper()
     req.update_header({'X-CW-API-Key': config.CRYPTOWATCH_API})
+    if config.DB_TYPE == 'sqlite':
+        db = DbSqlite3(config.DB_CONFIG)
+    elif config.DB_TYPE == 'postgresql':
+        db = DbPostgresql(config.DB_CONFIG)
+    else:
+        print('No database configuration')
+        raise
 
     db_exist = db.check_db()
     print('Database exists:', db_exist)
     print('Database exists:', db.has_connection())
-    db_table_exist = db.check_db(table_name=db.table['coinCryptowatch'])
+    db_table_exist = db.check_table(cs.table_name)
     print('Table coins exist:', db_table_exist)
 
     # init pandas displaying

@@ -13,9 +13,12 @@ import sys
 import pandas as pd
 
 import config
-from DbHelper import DbHelperArko, DbType
-from RequestHelper import RequestHelper
+import DbHelper
 from CoinSearch import CoinSearch
+from Db import Db
+from DbPostgresql import DbPostgresql
+from DbSqlite3 import DbSqlite3
+from RequestHelper import RequestHelper
 
 
 class CoinSearchAlcor(CoinSearch):
@@ -23,9 +26,10 @@ class CoinSearchAlcor(CoinSearch):
     """
 
     def __init__(self) -> None:
+        self.table_name = DbHelper.DbTableName.coinAlcor.name
         super().__init__()
 
-    def insert_coin(self, req: RequestHelper, db: DbHelperArko, params: dict):
+    def insert_coin(self, req: RequestHelper, db: Db, params: dict):
         """Insert a new coin to the coins table
 
         And download the thumb and large picture of the coin
@@ -45,7 +49,7 @@ class CoinSearchAlcor(CoinSearch):
         #safeFile(req, params['thumb'], 'CoinImages', 'coingecko_%s_%s.png'%(params['id'],'thumb'))
         #safeFile(req, params['large'], 'CoinImages', 'coingecko_%s_%s.png'%(params['id'],'large'))
         query = 'INSERT INTO {} (alcorid, base, quote, chain) ' \
-                'VALUES(?,?,?,?)'.format(db.table['coinAlcor'])
+                'VALUES(?,?,?,?)'.format(self.table_name)
         args = (params['id'],
                 params['base_token']['str'],
                 params['quote_token']['str'],
@@ -70,7 +74,7 @@ class CoinSearchAlcor(CoinSearch):
             res_coins.extend(res_coin)
         return res_coins
 
-    def search(self, req: RequestHelper, db: DbHelperArko, coin_search: str, assets: dict):
+    def search(self, req: RequestHelper, db: Db, coin_search: str, assets: dict):
         """Search coins in own database (if table exists)
 
         Show the results
@@ -90,12 +94,12 @@ class CoinSearchAlcor(CoinSearch):
 
         # Check if coin already in database and add to search result on row 0
         db_result = []
-        if db.check_table(db.table['coinAlcor']):
+        if db.check_table(self.table_name):
             coin_search_str = '%{}%'.format(coin_search)
             coin_search_query = '''SELECT * FROM {} WHERE
                                     base like ? or
                                     quote like ?
-                            '''.format(db.table['coinAlcor'])
+                            '''.format(self.table_name)
             db_result = db.query(coin_search_query,
                                  (coin_search_str, coin_search_str))
             if (len(db_result) > 0):
@@ -150,26 +154,24 @@ class CoinSearchAlcor(CoinSearch):
 
             # check if database exist, in case of sqlite create database
             if not db.has_connection():
-                if db.get_db_type() == DbType.sqlite:
-                    db.open()
-                else:
-                    print('No database %s, do new search' % db.get_db_type())
+                db.open()
 
             # check if coin name, symbol is already in our database
             if db.has_connection():
                 # if table doesn't exist, create table coins
-                if not db.check_table(db.table['coinAlcor']):
-                    db.create_table(db.table['coinAlcor'])
-                    db.chk_table[db.table['coinAlcor']] = True
+                if not db.check_table(self.table_name):
+                    DbHelper.create_table(db, self.table_name)
 
                 db_result = db.query('SELECT * FROM %s WHERE alcorid="%s"' %
-                                     (db.table['coinAlcor'], coin['id']))
+                                     (self.table_name, coin['id']))
                 if len(db_result):
                     print('Database already has a row with the coin %s' %
                           (coin['ticker_id']))
                 else:
                     # add new row to table coins
                     self.insert_coin(req, db, coin)
+            else:
+                print('No database connection')
 
 
 def __main__():
@@ -196,13 +198,19 @@ def __main__():
 
     # init session
     cs = CoinSearchAlcor()
-    db = DbHelperArko(config.DB_CONFIG, config.DB_TYPE)
     req = RequestHelper()
+    if config.DB_TYPE == 'sqlite':
+        db = DbSqlite3(config.DB_CONFIG)
+    elif config.DB_TYPE == 'postgresql':
+        db = DbPostgresql(config.DB_CONFIG)
+    else:
+        print('No database configuration')
+        raise
 
     db_exist = db.check_db()
     print('Database exists:', db_exist)
     print('Database exists:', db.has_connection())
-    db_table_exist = db.check_db(table_name=db.table['coinAlcor'])
+    db_table_exist = db.check_table(cs.table_name)
     print('Table coins exist:', db_table_exist)
 
     # init pandas displaying

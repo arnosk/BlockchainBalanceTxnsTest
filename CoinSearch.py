@@ -9,7 +9,7 @@ Base Class CoinSearch
 import sys
 from abc import ABC, abstractmethod
 
-from DbHelper import DbHelperArko
+from Db import Db
 from RequestHelper import RequestHelper
 
 
@@ -21,7 +21,7 @@ class CoinSearch(ABC):
         pass
 
     @abstractmethod
-    def search(self, req: RequestHelper, db: DbHelperArko, coin_search: str, assets: dict):
+    def search(self, req: RequestHelper, db: Db, coin_search: str, assets: dict):
         """Searching coins on exchange
 
         Search coins in own database (if table exists)
@@ -34,14 +34,14 @@ class CoinSearch(ABC):
         To add that coin to the coins table, if it doesn't already exists
 
         req = instance of RequestHelper
-        db = instance of DbHelperArko
+        db = instance of Db
         coin_search = string to search in assets
         assets = dictionary where each key is a chain with a list of string with assets from Alcor
         """
         pass
 
     @abstractmethod
-    def insert_coin(self, req: RequestHelper, db: DbHelperArko, params: dict):
+    def insert_coin(self, req: RequestHelper, db: Db, params: dict):
         """Insert coin in database
 
         Insert a new coin to the coins table
@@ -49,7 +49,7 @@ class CoinSearch(ABC):
 
 
         req = instance of RequestHelper
-        db = instance of DbHelperArko
+        db = instance of Db
         params = dictionary with retrieved coin info from exchange
                 {'id': 62,
                 'symbol': 'doge',

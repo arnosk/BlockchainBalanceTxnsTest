@@ -21,8 +21,11 @@ from dateutil import parser
 
 import CoinPrice
 import config
+import DbHelper
 from CoinPrice import CoinPrice
-from DbHelper import DbHelperArko
+from Db import Db
+from DbPostgresql import DbPostgresql
+from DbSqlite3 import DbSqlite3
 from RequestHelper import RequestHelper
 
 
@@ -31,6 +34,7 @@ class CoinPriceCryptowatch(CoinPrice):
     """
 
     def __init__(self) -> None:
+        self.table_name = DbHelper.DbTableName.coinCryptowatch.name
         super().__init__()
 
     def show_progress(self, nr: int, total: int):
@@ -341,7 +345,7 @@ def __main__():
     """
     argparser = argparse.ArgumentParser()
     argparser.add_argument('-d', '--date', type=str,
-                           help='Historical date to search on Cryptowatch, format: 2011-11-04T00:05:23+04:00', 
+                           help='Historical date to search on Cryptowatch, format: 2011-11-04T00:05:23+04:00',
                            default='2022-05-01T23:00')
     argparser.add_argument('-c', '--coin', type=str,
                            help='List of coins to search on Cryptowatch')
@@ -368,12 +372,18 @@ def __main__():
 
     # init session
     cp = CoinPriceCryptowatch()
-    db = DbHelperArko(config.DB_CONFIG, config.DB_TYPE)
     req = RequestHelper()
     req.update_header({'X-CW-API-Key': config.CRYPTOWATCH_API})
+    if config.DB_TYPE == 'sqlite':
+        db = DbSqlite3(config.DB_CONFIG)
+    elif config.DB_TYPE == 'postgresql':
+        db = DbPostgresql(config.DB_CONFIG)
+    else:
+        print('No database configuration')
+        raise
 
     # check if database and table coins exists and has values
-    db_exist = db.check_db(table_name=db.table['coinCryptowatch'])
+    db_exist = db.check_table(cp.table_name)
     print('Database and table coins exist: %s' % db_exist)
 
     # Determine which coins to retrieve prices for
@@ -381,8 +391,7 @@ def __main__():
     if coin_str != None:
         coins = re.split('[;,]', coin_str)
     elif db_exist:
-        coins = db.query('SELECT symbol FROM {}'.format(
-            db.table['coinCryptowatch']))
+        coins = db.query('SELECT symbol FROM {}'.format(cp.table_name))
         coins = [i[0] for i in coins]
     else:
         coins = ['btc', 'ltc', 'ada', 'sol', 'ardr', 'xpr']

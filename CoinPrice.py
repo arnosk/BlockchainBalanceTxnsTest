@@ -9,7 +9,7 @@ Base Class CoinPrice
 import sys
 from abc import ABC, abstractmethod
 
-import DbHelper
+import Db
 import RequestHelper
 
 
@@ -19,4 +19,3 @@ class CoinPrice(ABC):
 
     def __init__(self) -> None:
         pass
-

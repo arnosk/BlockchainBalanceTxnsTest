@@ -20,8 +20,11 @@ import pandas as pd
 from dateutil import parser
 
 import config
+import DbHelper
 from CoinPrice import CoinPrice
-from DbHelper import DbHelperArko
+from Db import Db
+from DbPostgresql import DbPostgresql
+from DbSqlite3 import DbSqlite3
 from RequestHelper import RequestHelper
 
 
@@ -30,6 +33,7 @@ class CoinPriceAlcor(CoinPrice):
     """
 
     def __init__(self) -> None:
+        self.table_name = DbHelper.DbTableName.coinAlcor.name
         super().__init__()
 
     def show_progress(self, nr: int, total: int):
@@ -93,16 +97,16 @@ class CoinPriceAlcor(CoinPrice):
             df.to_excel(filepath)
             print('File written: %s' % (filepath))
 
-    def add_coin_symbol(self, db: DbHelperArko, prices: dict):
+    def add_coin_symbol(self, db: Db, prices: dict):
         """Adds a new column with the symbol name
 
         Symbol name is retrieved from the database
 
-        db = instance of DbHelperArko
+        db = instance of Db
         prices = a dictionary with coin id from Alcor and prices
         """
         coins = db.query(
-            'SELECT alcorid, quote FROM {}'.format(db.table['coinAlcor']))
+            'SELECT alcorid, quote FROM {}'.format(self.table_name))
         for price_key, price_val in prices.items():
             print(price_val, price_key)
             if isinstance(price_val, dict):
@@ -276,11 +280,17 @@ def __main__():
 
     # init session
     cp = CoinPriceAlcor()
-    db = DbHelperArko(config.DB_CONFIG, config.DB_TYPE)
     req = RequestHelper()
+    if config.DB_TYPE == 'sqlite':
+        db = DbSqlite3(config.DB_CONFIG)
+    elif config.DB_TYPE == 'postgresql':
+        db = DbPostgresql(config.DB_CONFIG)
+    else:
+        print('No database configuration')
+        raise
 
     # check if database and table coins exists and has values
-    db_exist = db.check_db(table_name=db.table['coinAlcor'])
+    db_exist = db.check_table(cp.table_name)
     print('Database and table coins exist: %s' % db_exist)
 
     # Determine which coins to retrieve prices for
@@ -291,7 +301,7 @@ def __main__():
         coins = [[chain, i] for i in coins]
     elif db_exist:
         coins = db.query(
-            'SELECT chain, alcorid, quote, base FROM {}'.format(db.table['coinAlcor']))
+            'SELECT chain, alcorid, quote, base FROM {}'.format(cp.table_name))
         coins = [[i[0], i[1], i[2], i[3]] for i in coins]
     else:
         coins = [['proton', 157], ['wax', 158], ['proton', 13], ['wax', 67],
