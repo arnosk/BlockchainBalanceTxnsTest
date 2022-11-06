@@ -101,21 +101,23 @@ class CoinSearchCoingecko(CoinSearch):
             self.save_file(
                 req, params_image['large'], 'CoinImages', 'coingecko_%s_%s' % (c, 'large'))
 
-    def search_id_web(self, req: RequestHelper, search_str: str):
+    def search_id_web(self, req: RequestHelper, search_str: str) -> list:
         """Search request to Coingecko
 
         req = instance of RequestHelper
         search_str = string to search in assets
+        return value = list with search results
         """
         url = 'https://api.coingecko.com/api/v3/search?query='+search_str
         resp = req.get_request_response(url)
         res_coins = resp['coins']
         return res_coins
     
-    def search_id_db_query(self) -> str:
+    def get_search_id_db_query(self) -> str:
         """Query for searching coin in database
 
-        The ? is used for the search item
+        return value = query for database search with 
+                       ? is used for the search item
         """
         coin_search_query = '''SELECT * FROM {} WHERE
                                 coingeckoid like ? or

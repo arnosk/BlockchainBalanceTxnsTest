@@ -49,11 +49,12 @@ class CoinSearchCryptowatch(CoinSearch):
         db.execute(query, args)
         db.commit()
 
-    def search_id_assets(self, search_str: str, assets: list):
+    def search_id_assets(self, search_str: str, assets: list) -> list:
         """Search for coin in list of all assets
 
         search_str = string to search in assets
         assets = list of assets from Cryptowatch
+        return value = list with search results
         """
         s = search_str.lower()
         res_coins = [item for item in assets
@@ -61,10 +62,11 @@ class CoinSearchCryptowatch(CoinSearch):
                          re.match(s, item['symbol'].lower()))]
         return res_coins
 
-    def search_id_db_query(self) -> str:
+    def get_search_id_db_query(self) -> str:
         """Query for searching coin in database
 
-        The ? is used for the search item
+        return value = query for database search with 
+                       ? is used for the search item
         """
         coin_search_query = '''SELECT * FROM {} WHERE
                                 name like ? or

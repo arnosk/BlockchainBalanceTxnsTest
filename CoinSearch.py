@@ -26,26 +26,6 @@ class CoinSearch(ABC):
         pass
 
     @abstractmethod
-    def search(self, req: RequestHelper, db: Db, coin_search: str, assets: dict):
-        """Searching coins on exchange
-
-        Search coins in own database (if table exists)
-        Show the results
-
-        Search coins from exchange assets (already in assets)
-        Show the results
-
-        User can select a row number, from the table of search results
-        To add that coin to the coins table, if it doesn't already exists
-
-        req = instance of RequestHelper
-        db = instance of Db
-        coin_search = string to search in assets
-        assets = dictionary where each key is a chain with a list of string with assets from Alcor
-        """
-        pass
-
-    @abstractmethod
     def insert_coin(self, req: RequestHelper, db: Db, params: dict):
         """Insert coin in database
 
@@ -65,12 +45,35 @@ class CoinSearch(ABC):
         """
         pass
 
+    @abstractmethod
+    def search(self, req: RequestHelper, db: Db, coin_search: str, assets: dict):
+        """Searching coins on exchange
+
+        Search coins in own database (if table exists)
+        Show the results
+
+        Search coins from exchange assets (already in assets)
+        Show the results
+
+        User can select a row number, from the table of search results
+        To add that coin to the coins table, if it doesn't already exists
+
+        req = instance of RequestHelper
+        db = instance of Db
+        coin_search = string to search in assets
+        assets = dictionary where each key is a chain with a list of string with assets from Alcor
+        """
+        pass
+
     def input_number(self, message: str, minimal: int = 1, maximum: int = 1):
         """UI for asking row number
 
         message = string for printing on screen to ask for user input
         minimal = minimal allowed integer
         maximum = maximum allowed integer
+        retrun value = selected row number or 
+                       'n' for new search or 
+                       'q' for quit program
         """
 
         while True:
@@ -118,20 +121,25 @@ class CoinSearch(ABC):
             f.write(cfurl)
 
     @abstractmethod
-    def search_id_db_query(self) -> str:
+    def get_search_id_db_query(self) -> str:
         """Query for searching coin in database
 
-        The ? is used for the search item
+        return value = query for database search with 
+                       ? is used for the search item
         """
         pass
 
     def search_id_db(self, db: Db, coin_search: str) -> list:
         """Search for coin in database
+
+        db = database
+        coin_search = coin name to be searched
+        return value = list with search results
         """
         db_result = []
         if db.check_table(self.table_name):
             coin_search_str = '%{}%'.format(coin_search)
-            coin_search_query = self.search_id_db_query()
+            coin_search_query = self.get_search_id_db_query()
 
             # Create params tuple of n search items
             n = coin_search_query.count('?')
@@ -140,15 +148,19 @@ class CoinSearch(ABC):
             db_result = db.query(coin_search_query, params)
         return db_result
 
-    def print_search_result(self, items: list, text: str, row_drop=[]):
+    def print_search_result(self, items: list, text: str, col_drop=[]):
         """Print search result to terminal
+
+        items = list of items to be printed on screen
+        text = heading above the printed results
+        col_drop = list with columns names not to be shown
         """
         pd.set_option('display.max_colwidth', 20)
 
         if (len(items) > 0):
             itemsdf = pd.DataFrame(items)
-            if row_drop != []:
-                itemsdf = itemsdf.drop(row_drop, axis=1)
+            if col_drop != []:
+                itemsdf = itemsdf.drop(col_drop, axis=1)
             print('Search from', text)
             print(itemsdf)
         else:

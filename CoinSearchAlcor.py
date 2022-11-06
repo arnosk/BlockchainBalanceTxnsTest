@@ -54,6 +54,9 @@ class CoinSearchAlcor(CoinSearch):
         'chain': 'proton',
         'ticker_id': 'FREEOS-freeostokens_XUSDC-xtokens'
         }
+
+        coins = list with result from web
+        return value = simplified list
         """
         result = []
         for item in coins:
@@ -70,11 +73,12 @@ class CoinSearchAlcor(CoinSearch):
             )
         return result
 
-    def search_id_assets(self, search_str: str, assets):
+    def search_id_assets(self, search_str: str, assets) -> list:
         """Search for coin in list of all assets
 
         search_str: str = string to search in assets
         assets = list of assets from Alcor
+        return value = list with search results
         """
         s = search_str.lower()
         res_coins = []
@@ -87,10 +91,11 @@ class CoinSearchAlcor(CoinSearch):
             res_coins.extend(res_coin)
         return res_coins
 
-    def search_id_db_query(self) -> str:
+    def get_search_id_db_query(self) -> str:
         """Query for searching coin in database
 
-        The ? is used for the search item
+        return value = query for database search with 
+                       ? is used for the search item
         """
         coin_search_query = '''SELECT * FROM {} WHERE
                                 base like ? or
