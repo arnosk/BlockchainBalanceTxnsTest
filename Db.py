@@ -42,7 +42,7 @@ class Db(ABC):
         To be implemented if possible, 
         Otherwise calling this method will result in a runtime error
         """
-        raise RuntimeError('Unable to create database')
+        raise RuntimeError('Unable to create database in runtime')
 
     @abstractmethod
     def open(self):
@@ -74,7 +74,7 @@ class Db(ABC):
         return check
 
     def check_db(self):
-        """Check wether the database exists and can be opened
+        """Check wether the database exists and can be opened or created
         """
         check = False
         if self.conn is None:
@@ -82,6 +82,9 @@ class Db(ABC):
                 self.open()
             except:
                 check = False
+
+        if self.conn is None:
+            self.create_db()
 
         if self.conn is not None:
             # Database exists
