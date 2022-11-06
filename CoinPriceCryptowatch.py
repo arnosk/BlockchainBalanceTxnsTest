@@ -379,8 +379,7 @@ def __main__():
     elif config.DB_TYPE == 'postgresql':
         db = DbPostgresql(config.DB_CONFIG)
     else:
-        print('No database configuration')
-        raise
+        raise RuntimeError('No database configuration')
 
     # check if database and table coins exists and has values
     db_exist = db.check_table(cp.table_name)

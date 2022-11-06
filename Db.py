@@ -21,7 +21,10 @@ class Db(ABC):
         self.config = config
 
     def __enter__(self):
-        self.open()
+        try:
+            self.open()
+        except:
+            self.create_db()
         return self
 
     def __exit__(self, type, value, traceback):
@@ -32,6 +35,14 @@ class Db(ABC):
             self.commit()
             self.conn.close()
             self.conn = None
+
+    def create_db(self):
+        """Function to create and open a connection to the database
+
+        To be implemented if possible, 
+        Otherwise calling this method will result in a runtime error
+        """
+        raise RuntimeError('Unable to create database')
 
     @abstractmethod
     def open(self):
