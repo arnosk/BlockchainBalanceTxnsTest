@@ -32,32 +32,45 @@ class CoinSearchAlcor(CoinSearch):
     def insert_coin(self, req: RequestHelper, db: Db, params: dict):
         """Insert a new coin to the coins table
 
-        And download the thumb and large picture of the coin
-
-
         req = instance of RequestHelper
         db = instance of DbHelperArko
         params = dictionary with retrieved coin info from Alcor
-                {'id': 62,
-                'symbol': 'doge',
-                'name': 'Dogecoin',
-                'fiat': False,
-                'route': 'https://api.cryptowat.ch/assets/doge'
-                }
         """
-        print(params)
-        #safeFile(req, params['thumb'], 'CoinImages', 'coingecko_%s_%s.png'%(params['id'],'thumb'))
-        #safeFile(req, params['large'], 'CoinImages', 'coingecko_%s_%s.png'%(params['id'],'large'))
         query = 'INSERT INTO {} (alcorid, base, quote, chain) ' \
                 'VALUES(?,?,?,?)'.format(self.table_name)
         args = (params['id'],
-                params['base_token']['str'],
-                params['quote_token']['str'],
+                params['base'],
+                params['quote'],
                 params['chain'])
         db.execute(query, args)
         db.commit()
 
-    def search_id(self, search_str: str, assets):
+    def simplify_coinitems(self, coins: list) -> list:
+        """Return a simpler structure of coin items
+
+        {'id': 157,
+        'base_token': {"symbol":{"name":"XUSDC","precision":6},"contract":"xtokens","str":"XUSDC@xtokens"},
+        'quote_token': {"symbol":{"name":"FREEOS","precision":4},"contract":"freeostokens","str":"FREEOS@freeostokens"},
+        'chain': 'proton',
+        'ticker_id': 'FREEOS-freeostokens_XUSDC-xtokens'
+        }
+        """
+        result = []
+        for item in coins:
+            result.append(
+                {'quote': item['quote_token']['str'],  # item['quote_token']['symbol']['name']
+                'base': item['base_token']['str'], # item['base_token']['symbol']['name']
+                'chain': item['chain'],
+                'volume24': item['volume24'],
+                'volumeM': item['volumeMonth'],
+                'id': item['id'],
+                'ticker': item['ticker_id'] if 'ticker_id' in item else '-',
+                'frozen': item['frozen']
+                }
+            )
+        return result
+
+    def search_id_assets(self, search_str: str, assets):
         """Search for coin in list of all assets
 
         search_str: str = string to search in assets
@@ -73,6 +86,17 @@ class CoinSearchAlcor(CoinSearch):
                             re.search(s, item['quote_token']['str'].lower()))]
             res_coins.extend(res_coin)
         return res_coins
+
+    def search_id_db_query(self) -> str:
+        """Query for searching coin in database
+
+        The ? is used for the search item
+        """
+        coin_search_query = '''SELECT * FROM {} WHERE
+                                base like ? or
+                                quote like ?
+                            '''.format(self.table_name)
+        return coin_search_query
 
     def search(self, req: RequestHelper, db: Db, coin_search: str, assets: dict):
         """Search coins in own database (if table exists)
@@ -90,55 +114,18 @@ class CoinSearchAlcor(CoinSearch):
         coin_search = string to search in assets
         assets = dictionary where each key is a chain with a list of string with assets from Alcor
         """
-        pd.set_option('display.max_colwidth', 20)
-
-        # Check if coin already in database and add to search result on row 0
-        db_result = []
-        if db.check_table(self.table_name):
-            coin_search_str = '%{}%'.format(coin_search)
-            coin_search_query = '''SELECT * FROM {} WHERE
-                                    base like ? or
-                                    quote like ?
-                            '''.format(self.table_name)
-            db_result = db.query(coin_search_query,
-                                 (coin_search_str, coin_search_str))
-            if (len(db_result) > 0):
-                db_resultdf = pd.DataFrame(db_result)
-                print('Search in database:')
-                print(db_resultdf)
+        # Check if coin already in database
+        db_result = self.search_id_db(db, coin_search)
+        self.print_search_result(db_result, 'Database')
 
         # Do search on Alcor assets in memory
-        cw_result_coin = self.search_id(coin_search, assets)
-        if (len(cw_result_coin) > 0):
-            cw_result_coin_print = []
-            for item in cw_result_coin:
-                print(type(item))
-                print(item)
-                print(item['base_token'])
-                print('--------------------')
-                cw_result_coin_print.append(
-                    {'quote': item['quote_token']['str'],  # item['quote_token']['symbol']['name']
-                     # item['base_token']['symbol']['name']
-                     'base': item['base_token']['str'],
-                     'chain': item['chain'],
-                     'volume24': item['volume24'],
-                     'volumeM': item['volumeMonth'],
-                     'id': item['id'],
-                     'ticker': item['ticker_id'] if 'ticker_id' in item else '-',
-                     'frozen': item['frozen']
-                     }
-                )
-            cw_result_coindf = pd.DataFrame(cw_result_coin_print)
-            # .filter(['quote_token', 'base_token'], axis=1)
-            cw_result_coindf_print = cw_result_coindf
-            print('Search from Alcor:')
-            print(cw_result_coindf_print)
-        else:
-            print('Coin not found')
+        cs_result = self.search_id_assets(coin_search, assets)
+        cs_result = self.simplify_coinitems(cs_result)
+        self.print_search_result(cs_result, 'Alcor', ['ticker', 'frozen'])
 
         # ask user which row is the correct answer
         user_input = self.input_number('Select correct coin to store in database, or (N)ew search, or (Q)uit: ',
-                                       0, len(cw_result_coin)-1)
+                                       0, len(cs_result)-1)
 
         # if coin is selected, add to database (replace or add new row in db?)
         # go back to search question / exit
@@ -149,7 +136,7 @@ class CoinSearchAlcor(CoinSearch):
         else:
             # coin selected add to
             print('Number chosen = %s' % user_input)
-            coin = cw_result_coin[user_input]
+            coin = cs_result[user_input]
             print(coin)
 
             # check if database exist, in case of sqlite create database

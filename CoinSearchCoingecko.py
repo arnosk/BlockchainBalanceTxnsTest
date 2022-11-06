@@ -25,10 +25,8 @@ the key coins has a list of the search result of coins
   'exchanges': [] ...
 """
 import argparse
-import os
 import sys
 
-import cfscrape
 import pandas as pd
 
 import config
@@ -48,28 +46,6 @@ class CoinSearchCoingecko(CoinSearch):
         self.table_name = DbHelper.DbTableName.coinCoingecko.name
         super().__init__()
 
-    def save_file(self, req: RequestHelper, url: str, folder: str, filename: str):
-        """Download and safe a file from internet
-
-        If folder doesn't exists, create the folder
-
-        req = instance of RequestHelper
-        url = url to download file
-        folder = folder for saving downloaded file
-        filename = filename for saving downloaded file
-        """
-        os.makedirs(folder, exist_ok=True)
-
-        url = url.split('?')[0]
-        ext = url.split('.')[-1]
-        file = '%s\\%s.%s' % (folder, filename, ext)
-
-        scraper = cfscrape.create_scraper()
-        cfurl = scraper.get(url).content
-
-        with open(file, 'wb') as f:
-            f.write(cfurl)
-
     def insert_coin(self, req: RequestHelper, db: Db, params: dict):
         """Insert a new coin to the coins table
 
@@ -86,13 +62,11 @@ class CoinSearchCoingecko(CoinSearch):
                 'large': 'https://assets.coingecko.com/coins/images/5/large/dogecoin.png'
                 }
         """
-        self.save_file(req, params['thumb'], 'CoinImages',
-                       'coingecko_%s_%s' % (params['id'], 'thumb'))
-        self.save_file(req, params['large'], 'CoinImages',
-                       'coingecko_%s_%s' % (params['id'], 'large'))
         query = 'INSERT INTO {} (coingeckoid, name, symbol) ' \
                 'VALUES(?,?,?)'.format(self.table_name)
-        args = (params['id'], params['name'], params['symbol'])
+        args = (params['id'], 
+                params['name'], 
+                params['symbol'])
         db.execute(query, args)
         db.commit()
 
@@ -127,7 +101,7 @@ class CoinSearchCoingecko(CoinSearch):
             self.save_file(
                 req, params_image['large'], 'CoinImages', 'coingecko_%s_%s' % (c, 'large'))
 
-    def search_id(self, req: RequestHelper, search_str: str):
+    def search_id_web(self, req: RequestHelper, search_str: str):
         """Search request to Coingecko
 
         req = instance of RequestHelper
@@ -137,6 +111,18 @@ class CoinSearchCoingecko(CoinSearch):
         resp = req.get_request_response(url)
         res_coins = resp['coins']
         return res_coins
+    
+    def search_id_db_query(self) -> str:
+        """Query for searching coin in database
+
+        The ? is used for the search item
+        """
+        coin_search_query = '''SELECT * FROM {} WHERE
+                                coingeckoid like ? or
+                                name like ? or
+                                symbol like ?
+                            '''.format(self.table_name)
+        return coin_search_query
 
     def search(self, req: RequestHelper, db: Db, coin_search: str):
         """Search coins in own database (if table exists)
@@ -153,33 +139,17 @@ class CoinSearchCoingecko(CoinSearch):
         db = instance of DbHelperArko
         coin_search = string to search in assets
         """
-        pd.set_option('display.max_colwidth', 20)
-
-        # Check if coin already in database and add to search result on row 0
-        db_result = []
-        if db.check_table(self.table_name):
-            coin_search_str = '%{}%'.format(coin_search)
-            coin_search_query = '''SELECT * FROM {} WHERE
-                                    coingeckoid like ? or
-                                    name like ? or
-                                    symbol like ?
-                                '''.format(self.table_name)
-            db_result = db.query(coin_search_query,
-                                 (coin_search_str, coin_search_str, coin_search_str))
-            if (len(db_result) > 0):
-                db_resultdf = pd.DataFrame(db_result)
-                print('Search in database:')
-                print(db_resultdf)
+        # Check if coin already in database
+        db_result = self.search_id_db(db, coin_search)
+        self.print_search_result(db_result, 'Database')
 
         # Do search on coingecko
-        cg_result = self.search_id(req, coin_search)
-        cg_resultdf = pd.DataFrame(cg_result)
-        print('Search from coingecko:')
-        print(cg_resultdf)
+        cs_result = self.search_id_web(req, coin_search)
+        self.print_search_result(cs_result, 'CoinGecko')
 
         # ask user which row is the correct answer
         user_input = self.input_number('Select correct coin to store in database, or (N)ew search, or (Q)uit: ',
-                                       0, len(cg_result)-1)
+                                       0, len(cs_result)-1)
 
         # if coin is selected, add to database (replace or add new row in db?)
         # go back to search question / exit
@@ -190,7 +160,7 @@ class CoinSearchCoingecko(CoinSearch):
         else:
             # coin selected add to
             print('Number chosen = %s' % user_input)
-            coin = cg_result[user_input]
+            coin = cs_result[user_input]
             print(coin)
 
             # check if database exist, in case of sqlite create database
@@ -211,6 +181,10 @@ class CoinSearchCoingecko(CoinSearch):
                 else:
                     # add new row to table coins
                     self.insert_coin(req, db, coin)
+                    self.save_file(req, coin['thumb'], 'CoinImages',
+                                'coingecko_%s_%s' % (coin['id'], 'thumb'))
+                    self.save_file(req, coin['large'], 'CoinImages',
+                                'coingecko_%s_%s' % (coin['id'], 'large'))
             else:
                 print('No database connection')
 

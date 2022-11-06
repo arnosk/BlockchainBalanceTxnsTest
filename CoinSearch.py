@@ -6,8 +6,12 @@ Created on October 13, 2022
 Base Class CoinSearch
 
 """
+import os
 import sys
+
+import cfscrape
 from abc import ABC, abstractmethod
+import pandas as pd
 
 from Db import Db
 from RequestHelper import RequestHelper
@@ -16,6 +20,7 @@ from RequestHelper import RequestHelper
 class CoinSearch(ABC):
     """Base class for searching a coin on an exchange or provider
     """
+    table_name: str
 
     def __init__(self) -> None:
         pass
@@ -87,3 +92,64 @@ class CoinSearch(ABC):
                         continue
             return user_input
             break
+
+    def save_file(self, req: RequestHelper, url: str, folder: str, filename: str):
+        """Download and safe a file from internet
+
+        If folder doesn't exists, create the folder
+
+        req = instance of RequestHelper
+        url = url to download file
+        folder = folder for saving downloaded file
+        filename = filename for saving downloaded file
+        """
+        os.makedirs(folder, exist_ok=True)
+
+        url = url.split('?')[0]
+        ext = url.split('.')[-1]
+        file = '%s\\%s.%s' % (folder, filename, ext)
+
+        # Download file
+        scraper = cfscrape.create_scraper()
+        cfurl = scraper.get(url).content
+
+        # Safe file
+        with open(file, 'wb') as f:
+            f.write(cfurl)
+
+    @abstractmethod
+    def search_id_db_query(self) -> str:
+        """Query for searching coin in database
+
+        The ? is used for the search item
+        """
+        pass
+
+    def search_id_db(self, db: Db, coin_search: str) -> list:
+        """Search for coin in database
+        """
+        db_result = []
+        if db.check_table(self.table_name):
+            coin_search_str = '%{}%'.format(coin_search)
+            coin_search_query = self.search_id_db_query()
+
+            # Create params tuple of n search items
+            n = coin_search_query.count('?')
+            params = (coin_search_str,)*n
+
+            db_result = db.query(coin_search_query, params)
+        return db_result
+
+    def print_search_result(self, items: list, text: str, row_drop=[]):
+        """Print search result to terminal
+        """
+        pd.set_option('display.max_colwidth', 20)
+
+        if (len(items) > 0):
+            itemsdf = pd.DataFrame(items)
+            if row_drop != []:
+                itemsdf = itemsdf.drop(row_drop, axis=1)
+            print('Search from', text)
+            print(itemsdf)
+        else:
+            print('Coin not found from', text)

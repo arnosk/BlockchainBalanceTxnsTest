@@ -27,7 +27,7 @@ def create_table(Db: Db, table_name: str):
     """
     primary_key = Db.get_create_primary_key_str()
     query = ''
-    if table_name == DbTableName.coinCoingecko:
+    if table_name == DbTableName.coinCoingecko.name:
         query = '''CREATE TABLE {} (
                     id {},
                     coingeckoid VARCHAR(80) NOT NULL,
@@ -35,14 +35,14 @@ def create_table(Db: Db, table_name: str):
                     symbol VARCHAR(40) NOT NULL
                     )
                 '''.format(table_name, primary_key)
-    elif table_name == DbTableName.coinCryptowatch:
+    elif table_name == DbTableName.coinCryptowatch.name:
         query = '''CREATE TABLE {} (
                     id {},
                     name VARCHAR(80) NOT NULL,
                     symbol VARCHAR(40) NOT NULL
                     )
                 '''.format(table_name, primary_key)
-    elif table_name == DbTableName.coinAlcor:
+    elif table_name == DbTableName.coinAlcor.name:
         query = '''CREATE TABLE {} (
                     id {},
                     chain VARCHAR(20) NOT NULL,
