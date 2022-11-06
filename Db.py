@@ -63,7 +63,7 @@ class Db(ABC):
         return check
 
     def check_db(self):
-        """Check wether the database exists and can be found
+        """Check wether the database exists and can be opened
         """
         check = False
         if self.conn is None:
@@ -73,7 +73,7 @@ class Db(ABC):
                 check = False
 
         if self.conn is not None:
-            # Database exists and no check on table name
+            # Database exists
             check = True
 
         return check

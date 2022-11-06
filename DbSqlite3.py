@@ -26,10 +26,9 @@ class DbSqlite3(Db):
         db.open()
         ...
         db.close()
-
     """
 
-    def createDb(self):
+    def create_db(self):
         """Function to create and open a connection to the database
         """
         if not self.conn:

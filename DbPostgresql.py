@@ -26,7 +26,6 @@ class DbPostgresql(Db):
         db.open()
         ...
         db.close()
-
     """
 
     def open(self):
