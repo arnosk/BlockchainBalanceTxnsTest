@@ -25,7 +25,6 @@ the key coins has a list of the search result of coins
   'exchanges': [] ...
 """
 import argparse
-import sys
 
 import config
 import DbHelper

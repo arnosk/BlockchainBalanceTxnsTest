@@ -8,7 +8,6 @@ Cryptowat.ch search
 """
 import argparse
 import re
-import sys
 
 import config
 import DbHelper
