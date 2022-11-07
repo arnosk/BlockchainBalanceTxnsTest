@@ -27,8 +27,6 @@ the key coins has a list of the search result of coins
 import argparse
 import sys
 
-import pandas as pd
-
 import config
 import DbHelper
 from CoinSearch import CoinSearch

@@ -10,8 +10,6 @@ import argparse
 import re
 import sys
 
-import pandas as pd
-
 import config
 import DbHelper
 from CoinSearch import CoinSearch
@@ -166,12 +164,6 @@ def __main__():
 
     db.check_db()
     db.check_table(cs.table_name)
-
-    # init pandas displaying
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.max_colwidth', 20)
-    pd.set_option('display.float_format', '{:.6e}'.format)
 
     # get all assets from cryptowatch
     url_list = config.CRYPTOWATCH_URL + '/assets'

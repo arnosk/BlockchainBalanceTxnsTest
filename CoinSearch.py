@@ -153,7 +153,11 @@ class CoinSearch(ABC):
         text = heading above the printed results
         col_drop = list with columns names not to be shown
         """
+        # init pandas displaying
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_columns', None)
         pd.set_option('display.max_colwidth', 20)
+        pd.set_option('display.float_format', '{:.6e}'.format)
 
         if (len(items) > 0):
             itemsdf = pd.DataFrame(items)
