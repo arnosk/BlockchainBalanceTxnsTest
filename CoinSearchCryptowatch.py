@@ -36,6 +36,7 @@ class CoinSearchCryptowatch(CoinSearch):
         db = instance of Db
         params = dictionary with retrieved coin info from Cryptowatch
                 {'id': 62,
+                'sid': 'dogecoin',
                 'symbol': 'doge',
                 'name': 'Dogecoin',
                 'fiat': False,
@@ -43,9 +44,10 @@ class CoinSearchCryptowatch(CoinSearch):
                 }
         return value = rowcount or total changes 
         """
-        query = 'INSERT INTO {} (name, symbol) ' \
-                'VALUES(?,?)'.format(self.table_name)
-        args = (params['name'], 
+        query = 'INSERT INTO {} (siteid, name, symbol) ' \
+                'VALUES(?,?,?)'.format(self.table_name)
+        args = (params['sid'],
+                params['name'], 
                 params['symbol'])
         res = db.execute(query, args)
         db.commit()
@@ -60,7 +62,8 @@ class CoinSearchCryptowatch(CoinSearch):
         """
         s = search_str.lower()
         res_coins = [item for item in assets
-                     if (re.match(s, item['name'].lower()) or
+                     if (re.match(s, item['sid'].lower()) or
+                         re.match(s, item['name'].lower()) or
                          re.match(s, item['symbol'].lower()))]
         return res_coins
 
@@ -71,6 +74,7 @@ class CoinSearchCryptowatch(CoinSearch):
                        ? is used for the search item
         """
         coin_search_query = '''SELECT * FROM {} WHERE
+                                siteid like ? or
                                 name like ? or
                                 symbol like ?
                             '''.format(self.table_name)
@@ -112,7 +116,7 @@ class CoinSearchCryptowatch(CoinSearch):
             sys.exit('Exiting')
         else:
             coin = cs_result[user_input]
-            coin_id = coin['name']
+            coin_id = coin['sid']
             coin_name = coin['name']
 
             # check if coin name, symbol is already in our database
@@ -121,7 +125,7 @@ class CoinSearchCryptowatch(CoinSearch):
                 if not db.check_table(self.table_name):
                     DbHelper.create_table(db, self.table_name)
 
-                db_result = db.query('SELECT * FROM %s WHERE name="%s"' %
+                db_result = db.query('SELECT * FROM %s WHERE siteid="%s"' %
                                      (self.table_name, coin_id))
                 if len(db_result):
                     print('Database already has a row with the coin %s' %

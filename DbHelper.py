@@ -30,7 +30,7 @@ def create_table(Db: Db, table_name: str):
     if table_name == DbTableName.coinCoingecko.name:
         query = '''CREATE TABLE {} (
                     id {},
-                    coingeckoid VARCHAR(80) NOT NULL,
+                    siteid VARCHAR(80) NOT NULL,
                     name VARCHAR(80) NOT NULL,
                     symbol VARCHAR(40) NOT NULL
                     )
@@ -38,6 +38,7 @@ def create_table(Db: Db, table_name: str):
     elif table_name == DbTableName.coinCryptowatch.name:
         query = '''CREATE TABLE {} (
                     id {},
+                    siteid VARCHAR(80) NOT NULL,
                     name VARCHAR(80) NOT NULL,
                     symbol VARCHAR(40) NOT NULL
                     )
@@ -46,7 +47,7 @@ def create_table(Db: Db, table_name: str):
         query = '''CREATE TABLE {} (
                     id {},
                     chain VARCHAR(20) NOT NULL,
-                    alcorid INT NOT NULL,
+                    siteid INT NOT NULL,
                     base VARCHAR(80) NOT NULL,
                     quote VARCHAR(80) NOT NULL
                     )
