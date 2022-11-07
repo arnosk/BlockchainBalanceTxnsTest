@@ -75,14 +75,13 @@ class CoinSearch(ABC):
                        'n' for new search or 
                        'q' for quit program
         """
-
         while True:
             user_input = input(message)
             user_input = user_input.lower()
             if (user_input == 'n' or user_input == 'new'):
                 user_input = 'n'
             elif (user_input == 'q' or user_input == 'quit'):
-                sys.exit('Exiting')
+                user_input = 'q'
             else:
                 try:
                     user_input = int(user_input)
@@ -94,7 +93,6 @@ class CoinSearch(ABC):
                         print('No correct row number! Try again.')
                         continue
             return user_input
-            break
 
     def save_file(self, req: RequestHelper, url: str, folder: str, filename: str):
         """Download and safe a file from internet

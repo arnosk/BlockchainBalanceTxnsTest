@@ -46,7 +46,7 @@ class CoinSearchCoingecko(CoinSearch):
         self.table_name = DbHelper.DbTableName.coinCoingecko.name
         super().__init__()
 
-    def insert_coin(self, req: RequestHelper, db: Db, params: dict):
+    def insert_coin(self, req: RequestHelper, db: Db, params: dict) -> int:
         """Insert a new coin to the coins table
 
         And download the thumb and large picture of the coin
@@ -61,14 +61,16 @@ class CoinSearchCoingecko(CoinSearch):
                 'thumb': 'https://assets.coingecko.com/coins/images/5/thumb/dogecoin.png',
                 'large': 'https://assets.coingecko.com/coins/images/5/large/dogecoin.png'
                 }
+        return value = rowcount or total changes 
         """
         query = 'INSERT INTO {} (coingeckoid, name, symbol) ' \
                 'VALUES(?,?,?)'.format(self.table_name)
         args = (params['id'], 
                 params['name'], 
                 params['symbol'])
-        db.execute(query, args)
+        res = db.execute(query, args)
         db.commit()
+        return res
 
     def download_images(self, req: RequestHelper, db: Db):
         """Download image files for all coins in database from Coingecko
@@ -160,14 +162,9 @@ class CoinSearchCoingecko(CoinSearch):
         elif user_input == 'q':
             sys.exit('Exiting')
         else:
-            # coin selected add to
-            print('Number chosen = %s' % user_input)
             coin = cs_result[user_input]
-            print(coin)
-
-            # check if database exist, in case of sqlite create database
-            if not db.has_connection():
-                db.open()
+            coin_id = coin['id']
+            coin_name = coin['name']
 
             # check if coingecko id is already in our database
             if db.has_connection():
@@ -176,17 +173,23 @@ class CoinSearchCoingecko(CoinSearch):
                     DbHelper.create_table(db, self.table_name)
 
                 db_result = db.query('SELECT * FROM %s WHERE coingeckoid="%s"' %
-                                     (self.table_name, coin['id']))
+                                     (self.table_name, coin_id))
                 if len(db_result):
                     print('Database already has a row with the coin %s' %
-                          (coin['id']))
+                          (coin_name))
                 else:
                     # add new row to table coins
-                    self.insert_coin(req, db, coin)
+                    insert_result = self.insert_coin(req, db, coin)
+                    if insert_result > 0:
+                        print('%s added to the database' % (coin_name))
+                    else:
+                        print('Error adding %s to database' % (coin_name))
+                    
+                    # safe coin images
                     self.save_file(req, coin['thumb'], 'CoinImages',
-                                'coingecko_%s_%s' % (coin['id'], 'thumb'))
+                                'coingecko_%s_%s' % (coin_name, 'thumb'))
                     self.save_file(req, coin['large'], 'CoinImages',
-                                'coingecko_%s_%s' % (coin['id'], 'large'))
+                                'coingecko_%s_%s' % (coin_name, 'large'))
             else:
                 print('No database connection')
 

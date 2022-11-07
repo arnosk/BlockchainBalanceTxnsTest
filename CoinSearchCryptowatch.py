@@ -29,7 +29,7 @@ class CoinSearchCryptowatch(CoinSearch):
         self.table_name = DbHelper.DbTableName.coinCryptowatch.name
         super().__init__()
 
-    def insert_coin(self, req: RequestHelper, db: Db, params: dict):
+    def insert_coin(self, req: RequestHelper, db: Db, params: dict) -> int:
         """Insert a new coin to the coins table
 
         req = instance of RequestHelper
@@ -41,13 +41,15 @@ class CoinSearchCryptowatch(CoinSearch):
                 'fiat': False,
                 'route': 'https://api.cryptowat.ch/assets/doge'
                 }
+        return value = rowcount or total changes 
         """
         query = 'INSERT INTO {} (name, symbol) ' \
                 'VALUES(?,?)'.format(self.table_name)
         args = (params['name'], 
                 params['symbol'])
-        db.execute(query, args)
+        res = db.execute(query, args)
         db.commit()
+        return res
 
     def search_id_assets(self, search_str: str, assets: list) -> list:
         """Search for coin in list of all assets
@@ -109,14 +111,9 @@ class CoinSearchCryptowatch(CoinSearch):
         elif user_input == 'q':
             sys.exit('Exiting')
         else:
-            # coin selected add to
-            print('Number chosen = %s' % user_input)
             coin = cs_result[user_input]
-            print(coin)
-
-            # check if database exist, in case of sqlite create database
-            if not db.has_connection():
-                db.open()
+            coin_id = coin['name']
+            coin_name = coin['name']
 
             # check if coin name, symbol is already in our database
             if db.has_connection():
@@ -125,13 +122,17 @@ class CoinSearchCryptowatch(CoinSearch):
                     DbHelper.create_table(db, self.table_name)
 
                 db_result = db.query('SELECT * FROM %s WHERE name="%s"' %
-                                     (self.table_name, coin['name']))
+                                     (self.table_name, coin_id))
                 if len(db_result):
                     print('Database already has a row with the coin %s' %
-                          (coin['name']))
+                          (coin_name))
                 else:
                     # add new row to table coins
-                    self.insert_coin(req, db, coin)
+                    insert_result = self.insert_coin(req, db, coin)
+                    if insert_result > 0:
+                        print('%s added to the database' % (coin_name))
+                    else:
+                        print('Error adding %s to database' % (coin_name))
             else:
                 print('No database connection')
 

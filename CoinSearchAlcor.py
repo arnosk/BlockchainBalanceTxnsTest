@@ -29,12 +29,13 @@ class CoinSearchAlcor(CoinSearch):
         self.table_name = DbHelper.DbTableName.coinAlcor.name
         super().__init__()
 
-    def insert_coin(self, req: RequestHelper, db: Db, params: dict):
+    def insert_coin(self, req: RequestHelper, db: Db, params: dict) -> int:
         """Insert a new coin to the coins table
 
         req = instance of RequestHelper
         db = instance of DbHelperArko
         params = dictionary with retrieved coin info from Alcor
+        return value = rowcount or total changes 
         """
         query = 'INSERT INTO {} (alcorid, base, quote, chain) ' \
                 'VALUES(?,?,?,?)'.format(self.table_name)
@@ -42,8 +43,9 @@ class CoinSearchAlcor(CoinSearch):
                 params['base'],
                 params['quote'],
                 params['chain'])
-        db.execute(query, args)
+        res = db.execute(query, args)
         db.commit()
+        return res
 
     def simplify_coinitems(self, coins: list) -> list:
         """Return a simpler structure of coin items
@@ -139,14 +141,9 @@ class CoinSearchAlcor(CoinSearch):
         elif user_input == 'q':
             sys.exit('Exiting')
         else:
-            # coin selected add to
-            print('Number chosen = %s' % user_input)
             coin = cs_result[user_input]
-            print(coin)
-
-            # check if database exist, in case of sqlite create database
-            if not db.has_connection():
-                db.open()
+            coin_id = coin['id']
+            coin_name = coin['ticker']
 
             # check if coin name, symbol is already in our database
             if db.has_connection():
@@ -155,13 +152,17 @@ class CoinSearchAlcor(CoinSearch):
                     DbHelper.create_table(db, self.table_name)
 
                 db_result = db.query('SELECT * FROM %s WHERE alcorid="%s"' %
-                                     (self.table_name, coin['id']))
+                                     (self.table_name, coin_id))
                 if len(db_result):
                     print('Database already has a row with the coin %s' %
-                          (coin['ticker_id']))
+                          (coin_name))
                 else:
                     # add new row to table coins
-                    self.insert_coin(req, db, coin)
+                    insert_result = self.insert_coin(req, db, coin)
+                    if insert_result > 0:
+                        print('%s added to the database' % (coin_name))
+                    else:
+                        print('Error adding %s to database' % (coin_name))
             else:
                 print('No database connection')
 
