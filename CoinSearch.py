@@ -66,34 +66,23 @@ class CoinSearch(ABC):
         """
         pass
 
-    def input_number(self, message: str, minimal: int = 1, maximum: int = 1):
-        """UI for asking row number
+    @abstractmethod
+    def get_search_id_db_query(self) -> str:
+        """Query for searching coin in database
 
-        message = string for printing on screen to ask for user input
-        minimal = minimal allowed integer
-        maximum = maximum allowed integer
-        retrun value = selected row number or 
-                       'n' for new search or 
-                       'q' for quit program
+        return value = query for database search with 
+                       ? is used for the search item
         """
-        while True:
-            user_input = input(message)
-            user_input = user_input.lower()
-            if (user_input == 'n' or user_input == 'new'):
-                user_input = 'n'
-            elif (user_input == 'q' or user_input == 'quit'):
-                user_input = 'q'
-            else:
-                try:
-                    user_input = int(user_input)
-                except ValueError:
-                    print('No correct input! Try again.')
-                    continue
-                else:
-                    if (user_input < minimal or user_input > maximum):
-                        print('No correct row number! Try again.')
-                        continue
-            return user_input
+        pass
+
+    def save_images(self, req: RequestHelper, image_urls, coin_name: str):
+        """Save image files for one coin
+
+        req = instance of RequestHelper
+        image_urls = list if urls for images
+        coin_name = string with name of coin
+        """
+        pass
 
     def save_file(self, req: RequestHelper, url: str, folder: str, filename: str):
         """Download and safe a file from internet
@@ -118,15 +107,6 @@ class CoinSearch(ABC):
         # Safe file
         with open(file, 'wb') as f:
             f.write(cfurl)
-
-    @abstractmethod
-    def get_search_id_db_query(self) -> str:
-        """Query for searching coin in database
-
-        return value = query for database search with 
-                       ? is used for the search item
-        """
-        pass
 
     def search_id_db(self, db: Db, coin_search: str) -> list:
         """Search for coin in database
@@ -169,14 +149,34 @@ class CoinSearch(ABC):
         else:
             print('Coin not found from', text)
 
-    def save_images(self, req: RequestHelper, image_urls, coin_name: str):
-        """Save image files for one coin
+    def input_number(self, message: str, minimal: int = 1, maximum: int = 1):
+        """UI for asking row number
 
-        req = instance of RequestHelper
-        image_urls = list if urls for images
-        coin_name = string with name of coin
+        message = string for printing on screen to ask for user input
+        minimal = minimal allowed integer
+        maximum = maximum allowed integer
+        retrun value = selected row number or 
+                       'n' for new search or 
+                       'q' for quit program
         """
-        pass
+        while True:
+            user_input = input(message)
+            user_input = user_input.lower()
+            if (user_input == 'n' or user_input == 'new'):
+                user_input = 'n'
+            elif (user_input == 'q' or user_input == 'quit'):
+                user_input = 'q'
+            else:
+                try:
+                    user_input = int(user_input)
+                except ValueError:
+                    print('No correct input! Try again.')
+                    continue
+                else:
+                    if (user_input < minimal or user_input > maximum):
+                        print('No correct row number! Try again.')
+                        continue
+            return user_input
 
     def handle_user_input(self, req: RequestHelper, db: Db, user_input, search_result: list, coin_id_colname: str, coin_name_colname: str):
         """Handle user input after selecting coin
