@@ -164,11 +164,8 @@ def __main__():
     else:
         raise RuntimeError('No database configuration')
 
-    db_exist = db.check_db()
-    print('Database exists:', db_exist)
-    print('Database exists:', db.has_connection())
-    db_table_exist = db.check_table(cs.table_name)
-    print('Table coins exist:', db_table_exist)
+    db.check_db()
+    db.check_table(cs.table_name)
 
     # init pandas displaying
     pd.set_option('display.max_rows', None)

@@ -382,14 +382,14 @@ def __main__():
         raise RuntimeError('No database configuration')
 
     # check if database and table coins exists and has values
-    db_exist = db.check_table(cp.table_name)
-    print('Database and table coins exist: %s' % db_exist)
+    db.check_db()
+    db_table_exist = db.check_table(cp.table_name)
 
     # Determine which coins to retrieve prices for
     # From arguments, from database, or take default
     if coin_str != None:
         coins = re.split('[;,]', coin_str)
-    elif db_exist:
+    elif db_table_exist:
         coins = db.query('SELECT symbol FROM {}'.format(cp.table_name))
         coins = [i[0] for i in coins]
     else:

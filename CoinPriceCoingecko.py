@@ -341,14 +341,14 @@ def __main__():
         raise RuntimeError('No database configuration')
 
     # check if database and table coins exists and has values
-    db_exist = db.check_table(cp.table_name)
-    print('Database and table coins exist: %s' % db_exist)
+    db.check_db()
+    db_table_exist = db.check_table(cp.table_name)
 
     # Determine which coins to retrieve prices for
     # From arguments, from database, or take default
     if coin_str != None:
         coins = re.split('[;,]', coin_str)
-    elif db_exist:
+    elif db_table_exist:
         coins = db.query("SELECT coingeckoid FROM {}".format(cp.table_name))
         coins = [i[0] for i in coins]
     else:
@@ -361,7 +361,7 @@ def __main__():
 
     print("* Current price of coins")
     price = cp.get_price(req, coins, curr)
-    if db_exist:
+    if db_table_exist:
         price = cp.add_coin_symbol(db, price)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
@@ -383,7 +383,7 @@ def __main__():
 
     print("* History price of coins via market_chart")
     price = cp.get_price_hist_marketchart(req, None, coins, curr[0], date)
-    if db_exist:
+    if db_table_exist:
         price = cp.add_coin_symbol(db, price)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
