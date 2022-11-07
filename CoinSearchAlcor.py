@@ -134,35 +134,7 @@ class CoinSearchAlcor(CoinSearch):
 
         # if coin is selected, add to database (replace or add new row in db?)
         # go back to search question / exit
-        if user_input == 'n':
-            print('New search')
-        elif user_input == 'q':
-            sys.exit('Exiting')
-        else:
-            coin = cs_result[user_input]
-            coin_id = coin['id']
-            coin_name = coin['ticker']
-
-            # check if coin name, symbol is already in our database
-            if db.has_connection():
-                # if table doesn't exist, create table coins
-                if not db.check_table(self.table_name):
-                    DbHelper.create_table(db, self.table_name)
-
-                db_result = db.query('SELECT * FROM %s WHERE siteid="%s"' %
-                                     (self.table_name, coin_id))
-                if len(db_result):
-                    print('Database already has a row with the coin %s' %
-                          (coin_name))
-                else:
-                    # add new row to table coins
-                    insert_result = self.insert_coin(req, db, coin)
-                    if insert_result > 0:
-                        print('%s added to the database' % (coin_name))
-                    else:
-                        print('Error adding %s to database' % (coin_name))
-            else:
-                print('No database connection')
+        self.handle_user_input(req, db, user_input, cs_result, 'id', 'ticker')
 
 
 def __main__():

@@ -14,6 +14,7 @@ from abc import ABC, abstractmethod
 import pandas as pd
 
 from Db import Db
+import DbHelper
 from RequestHelper import RequestHelper
 
 
@@ -26,7 +27,7 @@ class CoinSearch(ABC):
         pass
 
     @abstractmethod
-    def insert_coin(self, req: RequestHelper, db: Db, params: dict):
+    def insert_coin(self, req: RequestHelper, db: Db, params: dict) -> int:
         """Insert coin in database
 
         Insert a new coin to the coins table
@@ -167,3 +168,59 @@ class CoinSearch(ABC):
             print(itemsdf)
         else:
             print('Coin not found from', text)
+
+    def save_images(self, req: RequestHelper, image_urls, coin_name: str):
+        """Save image files for one coin
+
+        req = instance of RequestHelper
+        image_urls = list if urls for images
+        coin_name = string with name of coin
+        """
+        pass
+
+    def handle_user_input(self, req: RequestHelper, db: Db, user_input, search_result: list, coin_id_colname: str, coin_name_colname: str):
+        """Handle user input after selecting coin
+
+        New search, skips the function
+        Quit exits the program
+        Other the selected row is inserted into the table, if it doesn't already exists
+
+        req = instance of RequestHelper
+        db = instance of Db
+        user_input = char or integer with row number
+        search_results = result from search
+        coin_id_colname = string for column of the coin id in search results
+        coin_name_colname = string for column of the coin name in search results
+        """
+        if user_input == 'n':
+            print('New search')
+        elif user_input == 'q':
+            sys.exit('Exiting')
+        else:
+            coin = search_result[user_input]
+            coin_id = coin[coin_id_colname]
+            coin_name = coin[coin_name_colname]
+
+            # check if coin name, symbol is already in our database
+            if db.has_connection():
+                # if table doesn't exist, create table coins
+                if not db.check_table(self.table_name):
+                    DbHelper.create_table(db, self.table_name)
+
+                db_result = db.query('SELECT * FROM %s WHERE siteid="%s"' %
+                                     (self.table_name, coin_id))
+                if len(db_result):
+                    print('Database already has a row with the coin %s' %
+                          (coin_name))
+                else:
+                    # add new row to table coins
+                    insert_result = self.insert_coin(req, db, coin)
+                    if insert_result > 0:
+                        print('%s added to the database' % (coin_name))
+
+                        # safe coin images
+                        self.save_images(req, coin, coin_name)
+                    else:
+                        print('Error adding %s to database' % (coin_name))
+            else:
+                print('No database connection')
