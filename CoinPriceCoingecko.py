@@ -105,7 +105,7 @@ class CoinPriceCoingecko(CoinPrice):
         prices = a dictionary with coin id from coingecko and prices
         """
         coins = db.query(
-            "SELECT coingeckoid, symbol FROM {}".format(self.table_name))
+            "SELECT siteid, symbol FROM {}".format(self.table_name))
         for price_key, price_val in prices.items():
             print(price_val, price_key)
             if isinstance(price_val, dict):
@@ -349,7 +349,7 @@ def __main__():
     if coin_str != None:
         coins = re.split('[;,]', coin_str)
     elif db_table_exist:
-        coins = db.query("SELECT coingeckoid FROM {}".format(cp.table_name))
+        coins = db.query("SELECT siteid FROM {}".format(cp.table_name))
         coins = [i[0] for i in coins]
     else:
         coins = ["bitcoin", "litecoin", "cardano", "solana", "ardor", "proton"]

@@ -63,7 +63,7 @@ class CoinSearchCoingecko(CoinSearch):
                 }
         return value = rowcount or total changes 
         """
-        query = 'INSERT INTO {} (coingeckoid, name, symbol) ' \
+        query = 'INSERT INTO {} (siteid, name, symbol) ' \
                 'VALUES(?,?,?)'.format(self.table_name)
         args = (params['id'], 
                 params['name'], 
@@ -79,7 +79,7 @@ class CoinSearchCoingecko(CoinSearch):
         db = instance of Db
         """
         # Get all coingeckoid's from database
-        coins = db.query('SELECT coingeckoid FROM {}'.format(self.table_name))
+        coins = db.query('SELECT siteid FROM {}'.format(self.table_name))
         coins = [i[0] for i in coins]
 
         # Retrieve coin info from coingecko
@@ -122,7 +122,7 @@ class CoinSearchCoingecko(CoinSearch):
                        ? is used for the search item
         """
         coin_search_query = '''SELECT * FROM {} WHERE
-                                coingeckoid like ? or
+                                siteid like ? or
                                 name like ? or
                                 symbol like ?
                             '''.format(self.table_name)
@@ -172,7 +172,7 @@ class CoinSearchCoingecko(CoinSearch):
                 if not db.check_table(self.table_name):
                     DbHelper.create_table(db, self.table_name)
 
-                db_result = db.query('SELECT * FROM %s WHERE coingeckoid="%s"' %
+                db_result = db.query('SELECT * FROM %s WHERE siteid="%s"' %
                                      (self.table_name, coin_id))
                 if len(db_result):
                     print('Database already has a row with the coin %s' %

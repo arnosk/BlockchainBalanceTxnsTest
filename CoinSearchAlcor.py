@@ -37,7 +37,7 @@ class CoinSearchAlcor(CoinSearch):
         params = dictionary with retrieved coin info from Alcor
         return value = rowcount or total changes 
         """
-        query = 'INSERT INTO {} (alcorid, base, quote, chain) ' \
+        query = 'INSERT INTO {} (siteid, base, quote, chain) ' \
                 'VALUES(?,?,?,?)'.format(self.table_name)
         args = (params['id'],
                 params['base'],
@@ -151,7 +151,7 @@ class CoinSearchAlcor(CoinSearch):
                 if not db.check_table(self.table_name):
                     DbHelper.create_table(db, self.table_name)
 
-                db_result = db.query('SELECT * FROM %s WHERE alcorid="%s"' %
+                db_result = db.query('SELECT * FROM %s WHERE siteid="%s"' %
                                      (self.table_name, coin_id))
                 if len(db_result):
                     print('Database already has a row with the coin %s' %

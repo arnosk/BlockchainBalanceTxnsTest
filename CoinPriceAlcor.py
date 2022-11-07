@@ -106,7 +106,7 @@ class CoinPriceAlcor(CoinPrice):
         prices = a dictionary with coin id from Alcor and prices
         """
         coins = db.query(
-            'SELECT alcorid, quote FROM {}'.format(self.table_name))
+            'SELECT siteid, quote FROM {}'.format(self.table_name))
         for price_key, price_val in prices.items():
             print(price_val, price_key)
             if isinstance(price_val, dict):
@@ -300,7 +300,7 @@ def __main__():
         coins = [[chain, i] for i in coins]
     elif db_table_exist:
         coins = db.query(
-            'SELECT chain, alcorid, quote, base FROM {}'.format(cp.table_name))
+            'SELECT chain, siteid, quote, base FROM {}'.format(cp.table_name))
         coins = [[i[0], i[1], i[2], i[3]] for i in coins]
     else:
         coins = [['proton', 157], ['wax', 158], ['proton', 13], ['wax', 67],
