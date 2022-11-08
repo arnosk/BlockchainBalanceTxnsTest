@@ -57,7 +57,7 @@ class CoinPriceAlcor(CoinPrice):
 
         return prices
 
-    def get_price(self, req: RequestHelper, coins, **kwargs):
+    def get_price_current(self, req: RequestHelper, coins, **kwargs):
         """Get alcor current price
 
         req = instance of RequestHelper
@@ -247,7 +247,7 @@ def __main__():
     #coins = [['proton', 157], ['wax', 158], ['proton', 13], ['wax', 67], ['proton', 5], ['eos', 2], ['telos', 34], ['proton', 96]]
 
     print('* Current price of coins')
-    price = cp.get_price(req, coins)
+    price = cp.get_price_current(req, coins)
     # if db_exist:
     #    price = _c(db_s price)
     df = pd.DataFrame(price).transpose()

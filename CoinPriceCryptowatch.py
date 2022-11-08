@@ -120,7 +120,7 @@ class CoinPriceCryptowatch(CoinPrice):
 
         return markets
 
-    def get_price(self, req: RequestHelper, markets):
+    def get_price_current(self, req: RequestHelper, markets):
         """Get Cryptowatch current price
 
         req = instance of RequestHelper
@@ -343,7 +343,7 @@ def __main__():
     print()
 
     print('* Current price of coins')
-    price = cp.get_price(req, markets)
+    price = cp.get_price_current(req, markets)
     price = cp.filter_marketpair_on_volume(price, max_markets_per_pair)
     print()
     if len(price) > 0:

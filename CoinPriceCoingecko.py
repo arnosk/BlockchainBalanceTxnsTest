@@ -56,6 +56,71 @@ class CoinPriceCoingecko(CoinPrice):
 
         return prices
 
+    def get_price_current(self, req: RequestHelper, coins, curr, **kwargs):
+        """Get coingecko current price
+
+        Thumbnail image is available
+
+        req = instance of RequestHelper
+        coins = one string or list of strings with assets for market base
+        curr = one string or list of strings with assets for market quote
+        **kwargs = extra arguments in url 
+        """
+        # convert list to comma-separated string
+        if isinstance(coins, list):
+            coins = ','.join(coins)
+        if isinstance(curr, list):
+            curr = ','.join(curr)
+
+        # make parameters
+        kwargs['ids'] = coins
+        kwargs['vs_currencies'] = curr
+        kwargs['include_last_updated_at'] = True
+
+        url = "https://api.coingecko.com/api/v3/simple/price"
+        url = req.api_url_params(url, kwargs)
+        resp = req.get_request_response(url)
+
+        # remove status_code from dictionary
+        resp.pop("status_code")
+
+        # convert timestamp to date
+        resp = self.convert_timestamp_lastupdated(resp)
+
+        return resp
+
+    def get_price_current_token(self, req: RequestHelper, chain, contracts, curr, **kwargs):
+        """Get coingecko current price of a token
+
+        req = instance of RequestHelper
+        chain = chain where contracts are
+        contracts = one string or list of strings with token contracts for market base
+        curr = one string or list of strings with assets for market quote
+        **kwargs = extra arguments in url 
+        """
+        # convert list to comma-separated string
+        if isinstance(contracts, list):
+            contracts = ','.join(contracts)
+        if isinstance(curr, list):
+            curr = ','.join(curr)
+
+        # make parameters
+        kwargs['contract_addresses'] = contracts
+        kwargs['vs_currencies'] = curr
+        kwargs['include_last_updated_at'] = True
+
+        url = "https://api.coingecko.com/api/v3/simple/token_price/"+chain
+        url = req.api_url_params(url, kwargs)
+        resp = req.get_request_response(url)
+
+        # remove status_code from dictionary
+        resp.pop("status_code")
+
+        # convert timestamp to date
+        resp = self.convert_timestamp_lastupdated(resp)
+
+        return resp
+
     def get_price_hist(self, req: RequestHelper, coins, curr, date):
         """Get coingecko history price
 
@@ -108,71 +173,6 @@ class CoinPriceCoingecko(CoinPrice):
             prices[coin] = price
 
         return prices
-
-    def get_price(self, req: RequestHelper, coins, curr, **kwargs):
-        """Get coingecko current price
-
-        Thumbnail image is available
-
-        req = instance of RequestHelper
-        coins = one string or list of strings with assets for market base
-        curr = one string or list of strings with assets for market quote
-        **kwargs = extra arguments in url 
-        """
-        # convert list to comma-separated string
-        if isinstance(coins, list):
-            coins = ','.join(coins)
-        if isinstance(curr, list):
-            curr = ','.join(curr)
-
-        # make parameters
-        kwargs['ids'] = coins
-        kwargs['vs_currencies'] = curr
-        kwargs['include_last_updated_at'] = True
-
-        url = "https://api.coingecko.com/api/v3/simple/price"
-        url = req.api_url_params(url, kwargs)
-        resp = req.get_request_response(url)
-
-        # remove status_code from dictionary
-        resp.pop("status_code")
-
-        # convert timestamp to date
-        resp = self.convert_timestamp_lastupdated(resp)
-
-        return resp
-
-    def get_token_price(self, req: RequestHelper, chain, contracts, curr, **kwargs):
-        """Get coingecko current price of a token
-
-        req = instance of RequestHelper
-        chain = chain where contracts are
-        contracts = one string or list of strings with token contracts for market base
-        curr = one string or list of strings with assets for market quote
-        **kwargs = extra arguments in url 
-        """
-        # convert list to comma-separated string
-        if isinstance(contracts, list):
-            contracts = ','.join(contracts)
-        if isinstance(curr, list):
-            curr = ','.join(curr)
-
-        # make parameters
-        kwargs['contract_addresses'] = contracts
-        kwargs['vs_currencies'] = curr
-        kwargs['include_last_updated_at'] = True
-
-        url = "https://api.coingecko.com/api/v3/simple/token_price/"+chain
-        url = req.api_url_params(url, kwargs)
-        resp = req.get_request_response(url)
-
-        # remove status_code from dictionary
-        resp.pop("status_code")
-
-        # convert timestamp to date
-        resp = self.convert_timestamp_lastupdated(resp)
-
-        return resp
 
     def get_price_hist_marketchart(self, req: RequestHelper, chain, coins_contracts, curr, date):
         """Get coingecko history price of a coin or a token
@@ -297,7 +297,7 @@ def __main__():
                  "0xacfc95585d80ab62f67a14c566c1b7a49fe91167"]
 
     print("* Current price of coins")
-    price = cp.get_price(req, coins, curr)
+    price = cp.get_price_current(req, coins, curr)
     if db_table_exist:
         price = cp.add_coin_symbol(db, price)
     df = pd.DataFrame(price).transpose()
@@ -331,7 +331,7 @@ def __main__():
     print()
 
     print("* Current price of token")
-    price = cp.get_token_price(req, chain, contracts, curr)
+    price = cp.get_price_current_token(req, chain, contracts, curr)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
