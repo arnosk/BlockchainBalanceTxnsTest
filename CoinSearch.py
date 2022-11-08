@@ -207,8 +207,8 @@ class CoinSearch(ABC):
                 if not db.check_table(self.table_name):
                     DbHelper.create_table(db, self.table_name)
 
-                db_result = db.query('SELECT * FROM %s WHERE siteid="%s"' %
-                                     (self.table_name, coin_id))
+                db_result = db.query('SELECT * FROM {} WHERE siteid=?'.format(self.table_name), 
+                                     (coin_id,))
                 if len(db_result):
                     print('Database already has a row with the coin %s' %
                           (coin_name))

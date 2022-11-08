@@ -59,8 +59,6 @@ class CoinPriceCoingecko(CoinPrice):
     def get_price_current(self, req: RequestHelper, coins, curr, **kwargs):
         """Get coingecko current price
 
-        Thumbnail image is available
-
         req = instance of RequestHelper
         coins = one string or list of strings with assets for market base
         curr = one string or list of strings with assets for market quote
@@ -82,7 +80,7 @@ class CoinPriceCoingecko(CoinPrice):
         resp = req.get_request_response(url)
 
         # remove status_code from dictionary
-        resp.pop("status_code")
+        resp.pop('status_code')
 
         # convert timestamp to date
         resp = self.convert_timestamp_lastupdated(resp)
@@ -114,7 +112,7 @@ class CoinPriceCoingecko(CoinPrice):
         resp = req.get_request_response(url)
 
         # remove status_code from dictionary
-        resp.pop("status_code")
+        resp.pop('status_code')
 
         # convert timestamp to date
         resp = self.convert_timestamp_lastupdated(resp)
@@ -140,7 +138,7 @@ class CoinPriceCoingecko(CoinPrice):
 
         # set date in correct format for url call
         dt = parser.parse(date)
-        date = dt.strftime("%d-%m-%Y")
+        date = dt.strftime('%d-%m-%Y')
 
         prices = {}
         i = 0
@@ -260,8 +258,8 @@ def __main__():
     coin_str = args.coin
     output_csv = args.output_csv
     output_xls = args.output_xls
-    current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-    print("Current date:", current_date)
+    current_date = datetime.now().strftime('%Y-%m-%d %H:%M')
+    print('Current date:', current_date)
 
     # init pandas displaying
     pd.set_option('display.max_rows', None)
@@ -286,17 +284,17 @@ def __main__():
     if coin_str != None:
         coins = re.split('[;,]', coin_str)
     elif db_table_exist:
-        coins = db.query("SELECT siteid FROM {}".format(cp.table_name))
+        coins = db.query('SELECT siteid FROM {}'.format(cp.table_name))
         coins = [i[0] for i in coins]
     else:
-        coins = ["bitcoin", "litecoin", "cardano", "solana", "ardor", "proton"]
+        coins = ['bitcoin', 'litecoin', 'cardano', 'solana', 'ardor', 'proton']
 
-    curr = ["usd", "eur", "btc", "eth"]
-    chain = "binance-smart-chain"
-    contracts = ["0x62858686119135cc00C4A3102b436a0eB314D402",
-                 "0xacfc95585d80ab62f67a14c566c1b7a49fe91167"]
+    curr = ['usd', 'eur', 'btc', 'eth']
+    chain = 'binance-smart-chain'
+    contracts = ['0x62858686119135cc00C4A3102b436a0eB314D402',
+                 '0xacfc95585d80ab62f67a14c566c1b7a49fe91167']
 
-    print("* Current price of coins")
+    print('* Current price of coins')
     price = cp.get_price_current(req, coins, curr)
     if db_table_exist:
         price = cp.add_coin_symbol(db, price)
@@ -305,20 +303,20 @@ def __main__():
     print()
     print(df)
     cp.write_to_file(df, output_csv, output_xls,
-                     "_current_coins_%s" % (current_date))
+                     '_current_coins_%s' % (current_date))
     print()
 
-    print("* History price of coins")
+    print('* History price of coins')
     price = cp.get_price_hist(req, coins, curr, date)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
     print(date)
     print(df)
-    cp.write_to_file(df, output_csv, output_xls, "_hist_%s" % (date))
+    cp.write_to_file(df, output_csv, output_xls, '_hist_%s' % (date))
     print()
 
-    print("* History price of coins via market_chart")
+    print('* History price of coins via market_chart')
     price = cp.get_price_hist_marketchart(req, None, coins, curr[0], date)
     if db_table_exist:
         price = cp.add_coin_symbol(db, price)
@@ -327,27 +325,27 @@ def __main__():
     print()
     print(df)
     cp.write_to_file(df, output_csv, output_xls,
-                     "_hist_marketchart_%s" % (date))
+                     '_hist_marketchart_%s' % (date))
     print()
 
-    print("* Current price of token")
+    print('* Current price of token')
     price = cp.get_price_current_token(req, chain, contracts, curr)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
     print(df)
     cp.write_to_file(df, output_csv, output_xls,
-                     "_current_token_%s" % (current_date))
+                     '_current_token_%s' % (current_date))
     print()
 
-    print("* History price of token via market_chart")
+    print('* History price of token via market_chart')
     price = cp.get_price_hist_marketchart(req, chain, contracts, curr[0], date)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
     print(df)
     cp.write_to_file(df, output_csv, output_xls,
-                     "_hist_marketchart_token_%s" % (date))
+                     '_hist_marketchart_token_%s' % (date))
     print()
 
 
