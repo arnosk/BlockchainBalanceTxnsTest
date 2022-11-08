@@ -45,7 +45,7 @@ class CoinPriceAlcor(CoinPrice):
         coins = db.query(
             'SELECT siteid, quote FROM {}'.format(self.table_name))
         for price_key, price_val in prices.items():
-            print(price_val, price_key)
+            #print(price_val, price_key)
             if isinstance(price_val, dict):
                 for coin_key, coin_val in coins:
                     if price_key == coin_key:

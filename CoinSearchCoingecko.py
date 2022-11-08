@@ -62,8 +62,8 @@ class CoinSearchCoingecko(CoinSearch):
         """
         query = 'INSERT INTO {} (siteid, name, symbol) ' \
                 'VALUES(?,?,?)'.format(self.table_name)
-        args = (params['id'], 
-                params['name'], 
+        args = (params['id'],
+                params['name'],
                 params['symbol'])
         res = db.execute(query, args)
         db.commit()
@@ -77,11 +77,14 @@ class CoinSearchCoingecko(CoinSearch):
         coin_name = string with name of coin
         """
         if 'thumb' in image_urls:
-            self.save_file(req, image_urls['thumb'], 'CoinImages', 'coingecko_%s_%s' % (coin_name, 'thumb'))
+            self.save_file(req, image_urls['thumb'], 'CoinImages', 'coingecko_%s_%s' % (
+                coin_name, 'thumb'))
         if 'small' in image_urls:
-            self.save_file(req, image_urls['small'], 'CoinImages', 'coingecko_%s_%s' % (coin_name, 'small'))
+            self.save_file(req, image_urls['small'], 'CoinImages', 'coingecko_%s_%s' % (
+                coin_name, 'small'))
         if 'large' in image_urls:
-            self.save_file(req, image_urls['large'], 'CoinImages', 'coingecko_%s_%s' % (coin_name, 'large'))
+            self.save_file(req, image_urls['large'], 'CoinImages', 'coingecko_%s_%s' % (
+                coin_name, 'large'))
 
     def download_images(self, req: RequestHelper, db: Db):
         """Download image files for all coins in database from Coingecko
@@ -95,14 +98,14 @@ class CoinSearchCoingecko(CoinSearch):
 
         # Retrieve coin info from coingecko
         for c in coins:
-            url = '''https://api.coingecko.com/api/v3/coins/{}?
+            url = '''{}/coins/{}?
                     localization=false&
                     tickers=false&
                     market_data=false&
                     community_data=false&
                     developer_data=false&
                     sparkline=false
-                '''.format(c)
+                '''.format(config.COINGECKO_URL, c)
             resp = req.get_request_response(url)
             params_image = resp['image']
 
@@ -116,11 +119,11 @@ class CoinSearchCoingecko(CoinSearch):
         search_str = string to search in assets
         return value = list with search results
         """
-        url = 'https://api.coingecko.com/api/v3/search?query='+search_str
+        url = '{}/search?query={}'.format(config.COINGECKO_URL, search_str)
         resp = req.get_request_response(url)
         res_coins = resp['coins']
         return res_coins
-    
+
     def get_search_id_db_query(self) -> str:
         """Query for searching coin in database
 
@@ -179,7 +182,8 @@ class CoinSearchCoingecko(CoinSearch):
             },...
         }
         """
-        url_list = 'https://api.coingecko.com/api/v3/coins/list?include_platform=true'
+        url_list = '{}/coins/list?include_platform=true'.format(
+            config.COINGECKO_URL)
         resp = req.get_request_response(url_list)
         assets = resp['result']
         return assets

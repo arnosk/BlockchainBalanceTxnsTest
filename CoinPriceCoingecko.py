@@ -44,7 +44,7 @@ class CoinPriceCoingecko(CoinPrice):
         coins = db.query(
             'SELECT siteid, symbol FROM {}'.format(self.table_name))
         for price_key, price_val in prices.items():
-            print(price_val, price_key)
+            #print(price_val, price_key)
             if isinstance(price_val, dict):
                 for coin_key, coin_val in coins:
                     if price_key == coin_key:
@@ -77,7 +77,7 @@ class CoinPriceCoingecko(CoinPrice):
         kwargs['vs_currencies'] = curr
         kwargs['include_last_updated_at'] = True
 
-        url = "https://api.coingecko.com/api/v3/simple/price"
+        url = '{}/simple/price'.format(config.COINGECKO_URL)
         url = req.api_url_params(url, kwargs)
         resp = req.get_request_response(url)
 
@@ -109,7 +109,7 @@ class CoinPriceCoingecko(CoinPrice):
         kwargs['vs_currencies'] = curr
         kwargs['include_last_updated_at'] = True
 
-        url = "https://api.coingecko.com/api/v3/simple/token_price/"+chain
+        url = '{}/simple/token_price/{}'.format(config.COINGECKO_URL, chain)
         url = req.api_url_params(url, kwargs)
         resp = req.get_request_response(url)
 
@@ -147,8 +147,8 @@ class CoinPriceCoingecko(CoinPrice):
         for coin in coins:
             i += 1
             self.show_progress(i, len(coins))
-            url = "https://api.coingecko.com/api/v3/coins/" + \
-                coin+"/history?date="+date+"&localization=false"
+            url = '{}/coins/{}/history?date={}&localization=false'.format(
+                config.COINGECKO_URL, coin, date)
             resp = req.get_request_response(url)
             market_data_exist = "market_data" in resp
             #print("coin:", coin)
@@ -211,11 +211,11 @@ class CoinPriceCoingecko(CoinPrice):
             i += 1
             self.show_progress(i, len(coins_contracts))
             if (chain == 'none' or chain is None):
-                url = "https://api.coingecko.com/api/v3/coins/" + \
-                    coin_contract+"/market_chart/range"
+                url = '{}/coins/{}/market_chart/range'.format(
+                    config.COINGECKO_URL, coin_contract)
             else:
-                url = "https://api.coingecko.com/api/v3/coins/"+chain + \
-                    "/contract/"+coin_contract+"/market_chart/range"
+                url = '{}/coins/{}/contract/{}/market_chart/range'.format(
+                    config.COINGECKO_URL, chain, coin_contract)
             url = req.api_url_params(url, params)
             resp = req.get_request_response(url)
 

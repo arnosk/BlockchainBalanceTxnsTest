@@ -98,6 +98,7 @@ class Db(ABC):
 
         return value = rowcount or total changes
         """
+        pass
 
     def execute(self, sql: str, params=None) -> int:
         """Execute a query
