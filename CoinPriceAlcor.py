@@ -249,7 +249,7 @@ def __main__():
     print('* Current price of coins')
     price = cp.get_price_current(req, coins)
     # if db_exist:
-    #    price = _c(db_s price)
+    #    price = add_coin_symbol(db, price)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
