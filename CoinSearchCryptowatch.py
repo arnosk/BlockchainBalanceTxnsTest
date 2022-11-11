@@ -109,6 +109,18 @@ class CoinSearchCryptowatch(CoinSearch):
         # go back to search question / exit
         self.handle_user_input(req, db, user_input, cs_result, 'sid', 'name')
 
+    def get_all_assets(self, req: RequestHelper) -> list:
+        '''Retrieve all assets from cryptowatch api
+
+        req = instance of RequestHelper
+        
+        returns = a list of string with assets from Alcor
+        '''
+        url_list = config.CRYPTOWATCH_URL + '/assets'
+        resp = req.get_request_response(url_list)
+        coin_assets = resp['result']
+        return coin_assets
+
 
 def __main__():
     """Get Cryptowatch search assets and store in database
@@ -137,9 +149,7 @@ def __main__():
     db.check_table(cs.table_name)
 
     # get all assets from cryptowatch
-    url_list = config.CRYPTOWATCH_URL + '/assets'
-    resp = req.get_request_response(url_list)
-    coin_assets = resp['result']
+    coin_assets = cs.get_all_assets(req)
 
     while coin_assets != None:
         if coin_search == None:
