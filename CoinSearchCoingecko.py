@@ -32,7 +32,6 @@ from CoinSearch import CoinSearch
 from Db import Db
 from DbPostgresql import DbPostgresql
 from DbSqlite3 import DbSqlite3
-from RequestHelper import RequestHelper
 
 
 class CoinSearchCoingecko(CoinSearch):
@@ -48,7 +47,6 @@ class CoinSearchCoingecko(CoinSearch):
 
         And download the thumb and large picture of the coin
 
-        req = instance of RequestHelper
         db = instance of Db
         params = dictionary with retrieved coin info from coingecko
                 {'id': 'dogecoin',
@@ -72,7 +70,6 @@ class CoinSearchCoingecko(CoinSearch):
     def save_images(self, image_urls, coin_name: str):
         """Save image files for one coin
 
-        req = instance of RequestHelper
         image_urls = list if urls for images
         coin_name = string with name of coin
         """
@@ -89,7 +86,6 @@ class CoinSearchCoingecko(CoinSearch):
     def download_images(self, db: Db):
         """Download image files for all coins in database from Coingecko
 
-        req = instance of RequestHelper
         db = instance of Db
         """
         # Get all coingeckoid's from database
@@ -115,7 +111,6 @@ class CoinSearchCoingecko(CoinSearch):
     def search_id_web(self, search_str: str) -> list:
         """Search request to Coingecko
 
-        req = instance of RequestHelper
         search_str = string to search in assets
         return value = list with search results
         """
@@ -148,8 +143,7 @@ class CoinSearchCoingecko(CoinSearch):
         User can select a row number, from the table of search results
         To add that coin to the coins table, if it doesn't already exists
 
-        req = instance of RequestHelper
-        db = instance of DbHelperArko
+        db = instance of Db
         coin_search = string to search in assets
         """
         # Check if coin already in database
@@ -168,10 +162,9 @@ class CoinSearchCoingecko(CoinSearch):
         # go back to search question / exit
         self.handle_user_input(db, user_input, cs_result, 'id', 'name')
 
-    def get_all_assets(self, req: RequestHelper):
+    def get_all_assets(self) -> list:
         """Get all assets from Coingecko
 
-        req = instance of RequestHelper
         result = {
             {'id': 'astroelon',
             'symbol': 'elonone',
@@ -184,7 +177,7 @@ class CoinSearchCoingecko(CoinSearch):
         """
         url_list = '{}/coins/list?include_platform=true'.format(
             config.COINGECKO_URL)
-        resp = req.get_request_response(url_list)
+        resp = self.req.get_request_response(url_list)
         assets = resp['result']
         return assets
 

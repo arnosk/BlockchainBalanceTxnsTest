@@ -23,7 +23,6 @@ from CoinPrice import CoinPrice
 from Db import Db
 from DbPostgresql import DbPostgresql
 from DbSqlite3 import DbSqlite3
-from RequestHelper import RequestHelper
 
 
 class CoinPriceAlcor(CoinPrice):
@@ -57,10 +56,9 @@ class CoinPriceAlcor(CoinPrice):
 
         return prices
 
-    def get_price_current(self, req: RequestHelper, coins, **kwargs):
+    def get_price_current(self, coins, **kwargs):
         """Get alcor current price
 
-        req = instance of RequestHelper
         coins = list of market id and chain
         **kwargs = extra arguments in url 
         """
@@ -75,8 +73,8 @@ class CoinPriceAlcor(CoinPrice):
         prices = {}
         for key_chain, val_coins in coin_srch.items():
             url = config.ALCOR_URL.replace('?', key_chain) + '/markets'
-            url = req.api_url_params(url, kwargs)
-            resp = req.get_request_response(url)
+            url = self.req.api_url_params(url, kwargs)
+            resp = self.req.get_request_response(url)
 
             # remove status_code from dictionary
             # resp.pop('status_code')
@@ -96,10 +94,9 @@ class CoinPriceAlcor(CoinPrice):
         #resp = convert_timestamp_lastupdated(resp)
         return prices
 
-    def get_price_hist_marketchart(self, req: RequestHelper, coins, date):
+    def get_price_hist_marketchart(self, coins, date):
         """Get alcor history price of a coin via market chart data
 
-        req = instance of RequestHelper
         coins = list of [chain, coinid] with assets or token contracts for market base
         date = historical date 
         """
@@ -136,8 +133,8 @@ class CoinPriceAlcor(CoinPrice):
             # try to get history data from and to specific date
             # increase time range until data is found
             while True:
-                url_try = req.api_url_params(url, params_try)
-                resp = req.get_request_response(url_try)
+                url_try = self.req.api_url_params(url, params_try)
+                resp = self.req.get_request_response(url_try)
 
                 # check for correct res
                 if resp['status_code'] == 'error':
@@ -217,7 +214,6 @@ def __main__():
 
     # init session
     cp = CoinPriceAlcor()
-    req = RequestHelper()
     if config.DB_TYPE == 'sqlite':
         db = DbSqlite3(config.DB_CONFIG)
     elif config.DB_TYPE == 'postgresql':
@@ -247,7 +243,7 @@ def __main__():
     #coins = [['proton', 157], ['wax', 158], ['proton', 13], ['wax', 67], ['proton', 5], ['eos', 2], ['telos', 34], ['proton', 96]]
 
     print('* Current price of coins')
-    price = cp.get_price_current(req, coins)
+    price = cp.get_price_current(coins)
     # if db_exist:
     #    price = add_coin_symbol(db, price)
     df = pd.DataFrame(price).transpose()
@@ -259,7 +255,7 @@ def __main__():
     print()
 
     print('* History price of coins via market_chart')
-    price = cp.get_price_hist_marketchart(req, coins, date)
+    price = cp.get_price_hist_marketchart(coins, date)
     # if db_exist:
     #    price = _c(db_s price)
     df = pd.DataFrame(price).transpose()

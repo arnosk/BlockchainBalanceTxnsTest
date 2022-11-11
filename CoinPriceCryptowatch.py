@@ -24,7 +24,6 @@ from CoinPrice import CoinPrice
 from Db import Db
 from DbPostgresql import DbPostgresql
 from DbSqlite3 import DbSqlite3
-from RequestHelper import RequestHelper
 
 
 class CoinPriceCryptowatch(CoinPrice):
@@ -35,16 +34,18 @@ class CoinPriceCryptowatch(CoinPrice):
         self.table_name = DbHelper.DbTableName.coinCryptowatch.name
         super().__init__()
 
+        # Update header of request session with user API key 
+        self.req.update_header({'X-CW-API-Key': config.CRYPTOWATCH_API})
+
     def show_allowance(self, allowance):
         """Show allowance data to standard output on same row
         """
         allowance_str = json.dumps(allowance)[1:50]
         print('\r'+allowance_str.rjust(80), end='', flush=True)
 
-    def get_markets(self, req: RequestHelper, coins, curr, strictness=0):
+    def get_markets(self, coins, curr, strictness=0):
         """Get cryptowatch markets for chosen coins
 
-        req = instance of RequestHelper
         coins = one string or list of strings with assets for market base
         curr = one string or list of strings with assets for market quote
                 'coin+curr' = pair of market
@@ -60,7 +61,7 @@ class CoinPriceCryptowatch(CoinPrice):
         markets = []
         for symbol in coins:
             url = config.CRYPTOWATCH_URL + '/assets/' + symbol
-            resp = req.get_request_response(url)
+            resp = self.req.get_request_response(url)
 
             if resp['status_code'] == 200:
                 #             res = resp['result']['markets']['base']
@@ -120,10 +121,9 @@ class CoinPriceCryptowatch(CoinPrice):
 
         return markets
 
-    def get_price_current(self, req: RequestHelper, markets):
+    def get_price_current(self, markets):
         """Get Cryptowatch current price
 
-        req = instance of RequestHelper
         markets = all market pairs and exchange to get price
         """
         prices = []
@@ -135,7 +135,7 @@ class CoinPriceCryptowatch(CoinPrice):
 
             if not 'error' in market:
                 url_list = market['route'] + '/summary'
-                resp = req.get_request_response(url_list)
+                resp = self.req.get_request_response(url_list)
 
                 # check for correct result
                 if resp['status_code'] == 'error':
@@ -162,13 +162,12 @@ class CoinPriceCryptowatch(CoinPrice):
 
         return prices
 
-    def get_price_hist_marketchart(self, req: RequestHelper, markets, date):
+    def get_price_hist_marketchart(self, markets, date):
         """Get coingecko history price of a coin or a token
 
         coins_contracts can be a list of strings or a single string
         If chain = 'none' or None search for a coins otherwise search for token contracts
 
-        req = instance of RequestHelper
         markets = all market pairs and exchange to get price
         date = historical date 
         """
@@ -193,8 +192,8 @@ class CoinPriceCryptowatch(CoinPrice):
                 url_list = market['route'] + \
                     '/ohlc?periods=3600&after=%s&before=%s' % (ts, ts)
                 url_list = market['route'] + '/ohlc'
-                url_list = req.api_url_params(url_list, params)
-                resp = req.get_request_response(url_list)
+                url_list = self.req.api_url_params(url_list, params)
+                resp = self.req.get_request_response(url_list)
                 if resp['status_code'] == 'error':
                     # got no status from request, must be an error
                     res = [{'exchange': market['exchange'],
@@ -309,8 +308,6 @@ def __main__():
 
     # init session
     cp = CoinPriceCryptowatch()
-    req = RequestHelper()
-    req.update_header({'X-CW-API-Key': config.CRYPTOWATCH_API})
     if config.DB_TYPE == 'sqlite':
         db = DbSqlite3(config.DB_CONFIG)
     elif config.DB_TYPE == 'postgresql':
@@ -336,14 +333,14 @@ def __main__():
 
     print()
     print('* Available markets of coins')
-    markets = cp.get_markets(req, coins, curr, max_markets_per_pair)
+    markets = cp.get_markets(coins, curr, max_markets_per_pair)
     resdf = pd.DataFrame(markets)
     resdf_print = resdf.drop('route', axis=1)
     print(resdf_print)
     print()
 
     print('* Current price of coins')
-    price = cp.get_price_current(req, markets)
+    price = cp.get_price_current(markets)
     price = cp.filter_marketpair_on_volume(price, max_markets_per_pair)
     print()
     if len(price) > 0:
@@ -357,7 +354,7 @@ def __main__():
     print()
 
     print('* History price of coins via market_chart')
-    price = cp.get_price_hist_marketchart(req, markets, date)
+    price = cp.get_price_hist_marketchart(markets, date)
     price = cp.filter_marketpair_on_volume(price, max_markets_per_pair)
     print()
     if len(price) > 0:

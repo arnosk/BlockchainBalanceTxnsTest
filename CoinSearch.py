@@ -25,7 +25,6 @@ class CoinSearch(ABC):
 
     def __init__(self) -> None:
         self.req = RequestHelper()
-        pass
 
     @abstractmethod
     def insert_coin(self, db: Db, params: dict) -> int:
@@ -34,8 +33,6 @@ class CoinSearch(ABC):
         Insert a new coin to the coins table
         And download the thumb and large picture of the coin
 
-
-        req = instance of RequestHelper
         db = instance of Db
         params = dictionary with retrieved coin info from exchange
                 {'id': 62,
@@ -60,7 +57,6 @@ class CoinSearch(ABC):
         User can select a row number, from the table of search results
         To add that coin to the coins table, if it doesn't already exists
 
-        req = instance of RequestHelper
         db = instance of Db
         coin_search = string to search in assets
         assets = dictionary where each key is a chain with a list of string with assets from Alcor
@@ -79,7 +75,6 @@ class CoinSearch(ABC):
     def save_images(self, image_urls, coin_name: str):
         """Save image files for one coin
 
-        req = instance of RequestHelper
         image_urls = list if urls for images
         coin_name = string with name of coin
         """
@@ -90,7 +85,6 @@ class CoinSearch(ABC):
 
         If folder doesn't exists, create the folder
 
-        req = instance of RequestHelper
         url = url to download file
         folder = folder for saving downloaded file
         filename = filename for saving downloaded file
@@ -186,7 +180,6 @@ class CoinSearch(ABC):
         Quit exits the program
         Other the selected row is inserted into the table, if it doesn't already exists
 
-        req = instance of RequestHelper
         db = instance of Db
         user_input = char or integer with row number
         search_results = result from search

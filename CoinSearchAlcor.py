@@ -15,7 +15,6 @@ from CoinSearch import CoinSearch
 from Db import Db
 from DbPostgresql import DbPostgresql
 from DbSqlite3 import DbSqlite3
-from RequestHelper import RequestHelper
 
 
 class CoinSearchAlcor(CoinSearch):
@@ -29,8 +28,7 @@ class CoinSearchAlcor(CoinSearch):
     def insert_coin(self, db: Db, params: dict) -> int:
         """Insert a new coin to the coins table
 
-        req = instance of RequestHelper
-        db = instance of DbHelperArko
+        db = instance of Db
         params = dictionary with retrieved coin info from Alcor
         return value = rowcount or total changes 
         """
@@ -113,8 +111,7 @@ class CoinSearchAlcor(CoinSearch):
         User can select a row number, from the table of search results
         To add that coin to the coins table, if it doesn't already exists
 
-        req = instance of RequestHelper
-        db = instance of DbHelperArko
+        db = instance of Db
         coin_search = string to search in assets
         assets = dictionary where each key is a chain with a list of string with assets from Alcor
         """
@@ -138,7 +135,6 @@ class CoinSearchAlcor(CoinSearch):
     def get_all_assets(self, chains: list) -> dict:
         '''Retrieve all assets from alcor api
 
-        req = instance of RequestHelper
         chains = list of chains in alcor ecosystem
         
         returns = dictionary where each key is a chain with a list of string with assets from Alcor

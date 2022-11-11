@@ -22,7 +22,6 @@ from CoinPrice import CoinPrice
 from Db import Db
 from DbPostgresql import DbPostgresql
 from DbSqlite3 import DbSqlite3
-from RequestHelper import RequestHelper
 
 
 class CoinPriceCoingecko(CoinPrice):
@@ -56,10 +55,9 @@ class CoinPriceCoingecko(CoinPrice):
 
         return prices
 
-    def get_price_current(self, req: RequestHelper, coins, curr, **kwargs):
+    def get_price_current(self, coins, curr, **kwargs):
         """Get coingecko current price
 
-        req = instance of RequestHelper
         coins = one string or list of strings with assets for market base
         curr = one string or list of strings with assets for market quote
         **kwargs = extra arguments in url 
@@ -76,8 +74,8 @@ class CoinPriceCoingecko(CoinPrice):
         kwargs['include_last_updated_at'] = True
 
         url = '{}/simple/price'.format(config.COINGECKO_URL)
-        url = req.api_url_params(url, kwargs)
-        resp = req.get_request_response(url)
+        url = self.req.api_url_params(url, kwargs)
+        resp = self.req.get_request_response(url)
 
         # remove status_code from dictionary
         resp.pop('status_code')
@@ -87,10 +85,9 @@ class CoinPriceCoingecko(CoinPrice):
 
         return resp
 
-    def get_price_current_token(self, req: RequestHelper, chain, contracts, curr, **kwargs):
+    def get_price_current_token(self, chain, contracts, curr, **kwargs):
         """Get coingecko current price of a token
 
-        req = instance of RequestHelper
         chain = chain where contracts are
         contracts = one string or list of strings with token contracts for market base
         curr = one string or list of strings with assets for market quote
@@ -108,8 +105,8 @@ class CoinPriceCoingecko(CoinPrice):
         kwargs['include_last_updated_at'] = True
 
         url = '{}/simple/token_price/{}'.format(config.COINGECKO_URL, chain)
-        url = req.api_url_params(url, kwargs)
-        resp = req.get_request_response(url)
+        url = self.req.api_url_params(url, kwargs)
+        resp = self.req.get_request_response(url)
 
         # remove status_code from dictionary
         resp.pop('status_code')
@@ -119,14 +116,13 @@ class CoinPriceCoingecko(CoinPrice):
 
         return resp
 
-    def get_price_hist(self, req: RequestHelper, coins, curr, date):
+    def get_price_hist(self, coins, curr, date):
         """Get coingecko history price
 
         one price per day, not suitable for tax in Netherlands on 31-12-20xx 23:00
         coins can be a list of strings or a single string
         Thumbnail image is available
 
-        req = instance of RequestHelper
         coins = one string or list of strings with assets for market base
         curr = one string or list of strings with assets for market quote
         date = historical date 
@@ -147,7 +143,7 @@ class CoinPriceCoingecko(CoinPrice):
             self.show_progress(i, len(coins))
             url = '{}/coins/{}/history?date={}&localization=false'.format(
                 config.COINGECKO_URL, coin, date)
-            resp = req.get_request_response(url)
+            resp = self.req.get_request_response(url)
             market_data_exist = "market_data" in resp
             #print("coin:", coin)
             #print("price of "+coin+" "+date+": ", resp['market_data']['current_price'][currency],currency)
@@ -172,13 +168,12 @@ class CoinPriceCoingecko(CoinPrice):
 
         return prices
 
-    def get_price_hist_marketchart(self, req: RequestHelper, chain, coins_contracts, curr, date):
+    def get_price_hist_marketchart(self, chain, coins_contracts, curr, date):
         """Get coingecko history price of a coin or a token
 
         coins_contracts can be a list of strings or a single string
         If chain = "none" or None search for a coins otherwise search for token contracts
 
-        req = instance of RequestHelper
         chain = chain where contracts are or None for coins search
         coins_contracts = one string or list of strings with assets or token contracts for market base
         curr = one string or list of strings with assets for market quote
@@ -214,8 +209,8 @@ class CoinPriceCoingecko(CoinPrice):
             else:
                 url = '{}/coins/{}/contract/{}/market_chart/range'.format(
                     config.COINGECKO_URL, chain, coin_contract)
-            url = req.api_url_params(url, params)
-            resp = req.get_request_response(url)
+            url = self.req.api_url_params(url, params)
+            resp = self.req.get_request_response(url)
 
             if resp['status_code'] == "error":
                 # got no status from request, must be an error
@@ -267,7 +262,6 @@ def __main__():
 
     # init session
     cp = CoinPriceCoingecko()
-    req = RequestHelper()
     if config.DB_TYPE == 'sqlite':
         db = DbSqlite3(config.DB_CONFIG)
     elif config.DB_TYPE == 'postgresql':
@@ -295,7 +289,7 @@ def __main__():
                  '0xacfc95585d80ab62f67a14c566c1b7a49fe91167']
 
     print('* Current price of coins')
-    price = cp.get_price_current(req, coins, curr)
+    price = cp.get_price_current(coins, curr)
     if db_table_exist:
         price = cp.add_coin_symbol(db, price)
     df = pd.DataFrame(price).transpose()
@@ -307,7 +301,7 @@ def __main__():
     print()
 
     print('* History price of coins')
-    price = cp.get_price_hist(req, coins, curr, date)
+    price = cp.get_price_hist(coins, curr, date)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
@@ -317,7 +311,7 @@ def __main__():
     print()
 
     print('* History price of coins via market_chart')
-    price = cp.get_price_hist_marketchart(req, None, coins, curr[0], date)
+    price = cp.get_price_hist_marketchart(None, coins, curr[0], date)
     if db_table_exist:
         price = cp.add_coin_symbol(db, price)
     df = pd.DataFrame(price).transpose()
@@ -329,7 +323,7 @@ def __main__():
     print()
 
     print('* Current price of token')
-    price = cp.get_price_current_token(req, chain, contracts, curr)
+    price = cp.get_price_current_token(chain, contracts, curr)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()
@@ -339,7 +333,7 @@ def __main__():
     print()
 
     print('* History price of token via market_chart')
-    price = cp.get_price_hist_marketchart(req, chain, contracts, curr[0], date)
+    price = cp.get_price_hist_marketchart(chain, contracts, curr[0], date)
     df = pd.DataFrame(price).transpose()
     df = df.sort_index(key=lambda x: x.str.lower())
     print()

@@ -14,7 +14,7 @@ from pathlib import Path
 
 import config
 import Db
-import RequestHelper
+from RequestHelper import RequestHelper
 
 
 class CoinPrice(ABC):
@@ -22,7 +22,7 @@ class CoinPrice(ABC):
     """
 
     def __init__(self) -> None:
-        pass
+        self.req = RequestHelper()
 
     def show_progress(self, nr: int, total: int):
         """Show progress to standard output

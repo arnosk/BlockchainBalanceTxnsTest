@@ -15,7 +15,6 @@ from CoinSearch import CoinSearch
 from Db import Db
 from DbPostgresql import DbPostgresql
 from DbSqlite3 import DbSqlite3
-from RequestHelper import RequestHelper
 
 
 class CoinSearchCryptowatch(CoinSearch):
@@ -32,7 +31,6 @@ class CoinSearchCryptowatch(CoinSearch):
     def insert_coin(self, db: Db, params: dict) -> int:
         """Insert a new coin to the coins table
 
-        req = instance of RequestHelper
         db = instance of Db
         params = dictionary with retrieved coin info from Cryptowatch
                 {'id': 62,
@@ -91,7 +89,6 @@ class CoinSearchCryptowatch(CoinSearch):
         User can select a row number, from the table of search results
         To add that coin to the coins table, if it doesn't already exists
 
-        req = instance of RequestHelper
         db = instance of Db
         coin_search = string to search in assets
         assets = list of string with assets from Cryptowatch
@@ -115,8 +112,6 @@ class CoinSearchCryptowatch(CoinSearch):
     def get_all_assets(self) -> list:
         '''Retrieve all assets from cryptowatch api
 
-        req = instance of RequestHelper
-        
         returns = a list of string with assets from Alcor
         '''
         url_list = config.CRYPTOWATCH_URL + '/assets'
