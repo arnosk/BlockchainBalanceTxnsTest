@@ -139,8 +139,6 @@ def __main__():
 
     # init session
     cs = CoinSearchCryptowatch()
-    req = RequestHelper()
-    req.update_header({'X-CW-API-Key': config.CRYPTOWATCH_API})
     if config.DB_TYPE == 'sqlite':
         db = DbSqlite3(config.DB_CONFIG)
     elif config.DB_TYPE == 'postgresql':
