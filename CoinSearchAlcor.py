@@ -135,6 +135,21 @@ class CoinSearchAlcor(CoinSearch):
         # go back to search question / exit
         self.handle_user_input(req, db, user_input, cs_result, 'id', 'ticker')
 
+    def get_all_assets(self, req: RequestHelper, chains: list) -> dict:
+        '''Retrieve all assets from alcor api
+
+        req = instance of RequestHelper
+        chains = list of chains in alcor ecosystem
+        
+        returns = dictionary where each key is a chain with a list of string with assets from Alcor
+        '''
+        coin_assets = {}
+        for chain in chains:
+            url_list = config.ALCOR_URL.replace('?', chain) + '/markets'
+            resp = req.get_request_response(url_list)
+            coin_assets[chain] = resp['result']
+        return coin_assets
+
 
 def __main__():
     """Get Alcor search assets and store in database
@@ -172,12 +187,7 @@ def __main__():
     db.check_table(cs.table_name)
 
     # get all assets from Alcor
-    coin_assets = {}
-    for chain in chains:
-        url_list = config.ALCOR_URL.replace('?', chain) + '/markets'
-        print(url_list)
-        resp = req.get_request_response(url_list)
-        coin_assets[chain] = resp['result']
+    coin_assets = cs.get_all_assets(req, chains)
 
     while coin_assets != None:
         if coin_search == None:
