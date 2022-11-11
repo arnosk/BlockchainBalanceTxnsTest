@@ -24,10 +24,11 @@ class CoinSearch(ABC):
     table_name: str
 
     def __init__(self) -> None:
+        self.req = RequestHelper()
         pass
 
     @abstractmethod
-    def insert_coin(self, req: RequestHelper, db: Db, params: dict) -> int:
+    def insert_coin(self, db: Db, params: dict) -> int:
         """Insert coin in database
 
         Insert a new coin to the coins table
@@ -47,7 +48,7 @@ class CoinSearch(ABC):
         pass
 
     @abstractmethod
-    def search(self, req: RequestHelper, db: Db, coin_search: str, assets: dict):
+    def search(self, db: Db, coin_search: str, assets: dict):
         """Searching coins on exchange
 
         Search coins in own database (if table exists)
@@ -75,7 +76,7 @@ class CoinSearch(ABC):
         """
         pass
 
-    def save_images(self, req: RequestHelper, image_urls, coin_name: str):
+    def save_images(self, image_urls, coin_name: str):
         """Save image files for one coin
 
         req = instance of RequestHelper
@@ -84,7 +85,7 @@ class CoinSearch(ABC):
         """
         pass
 
-    def save_file(self, req: RequestHelper, url: str, folder: str, filename: str):
+    def save_file(self, url: str, folder: str, filename: str):
         """Download and safe a file from internet
 
         If folder doesn't exists, create the folder
@@ -178,7 +179,7 @@ class CoinSearch(ABC):
                         continue
             return user_input
 
-    def handle_user_input(self, req: RequestHelper, db: Db, user_input, search_result: list, coin_id_colname: str, coin_name_colname: str):
+    def handle_user_input(self, db: Db, user_input, search_result: list, coin_id_colname: str, coin_name_colname: str):
         """Handle user input after selecting coin
 
         New search, skips the function
@@ -214,12 +215,12 @@ class CoinSearch(ABC):
                           (coin_name))
                 else:
                     # add new row to table coins
-                    insert_result = self.insert_coin(req, db, coin)
+                    insert_result = self.insert_coin(db, coin)
                     if insert_result > 0:
                         print('%s added to the database' % (coin_name))
 
                         # safe coin images
-                        self.save_images(req, coin, coin_name)
+                        self.save_images(coin, coin_name)
                     else:
                         print('Error adding %s to database' % (coin_name))
             else:

@@ -43,7 +43,7 @@ class CoinSearchCoingecko(CoinSearch):
         self.table_name = DbHelper.DbTableName.coinCoingecko.name
         super().__init__()
 
-    def insert_coin(self, req: RequestHelper, db: Db, params: dict) -> int:
+    def insert_coin(self, db: Db, params: dict) -> int:
         """Insert a new coin to the coins table
 
         And download the thumb and large picture of the coin
@@ -69,7 +69,7 @@ class CoinSearchCoingecko(CoinSearch):
         db.commit()
         return res
 
-    def save_images(self, req: RequestHelper, image_urls, coin_name: str):
+    def save_images(self, image_urls, coin_name: str):
         """Save image files for one coin
 
         req = instance of RequestHelper
@@ -77,16 +77,16 @@ class CoinSearchCoingecko(CoinSearch):
         coin_name = string with name of coin
         """
         if 'thumb' in image_urls:
-            self.save_file(req, image_urls['thumb'], 'CoinImages', 'coingecko_%s_%s' % (
+            self.save_file(image_urls['thumb'], 'CoinImages', 'coingecko_%s_%s' % (
                 coin_name, 'thumb'))
         if 'small' in image_urls:
-            self.save_file(req, image_urls['small'], 'CoinImages', 'coingecko_%s_%s' % (
+            self.save_file(image_urls['small'], 'CoinImages', 'coingecko_%s_%s' % (
                 coin_name, 'small'))
         if 'large' in image_urls:
-            self.save_file(req, image_urls['large'], 'CoinImages', 'coingecko_%s_%s' % (
+            self.save_file(image_urls['large'], 'CoinImages', 'coingecko_%s_%s' % (
                 coin_name, 'large'))
 
-    def download_images(self, req: RequestHelper, db: Db):
+    def download_images(self, db: Db):
         """Download image files for all coins in database from Coingecko
 
         req = instance of RequestHelper
@@ -106,13 +106,13 @@ class CoinSearchCoingecko(CoinSearch):
                     developer_data=false&
                     sparkline=false
                 '''.format(config.COINGECKO_URL, c)
-            resp = req.get_request_response(url)
+            resp = self.req.get_request_response(url)
             params_image = resp['image']
 
             # Save image files
-            self.save_images(req, params_image, c)
+            self.save_images(params_image, c)
 
-    def search_id_web(self, req: RequestHelper, search_str: str) -> list:
+    def search_id_web(self, search_str: str) -> list:
         """Search request to Coingecko
 
         req = instance of RequestHelper
@@ -120,7 +120,7 @@ class CoinSearchCoingecko(CoinSearch):
         return value = list with search results
         """
         url = '{}/search?query={}'.format(config.COINGECKO_URL, search_str)
-        resp = req.get_request_response(url)
+        resp = self.req.get_request_response(url)
         res_coins = resp['coins']
         return res_coins
 
@@ -137,7 +137,7 @@ class CoinSearchCoingecko(CoinSearch):
                             '''.format(self.table_name)
         return coin_search_query
 
-    def search(self, req: RequestHelper, db: Db, coin_search: str):
+    def search(self, db: Db, coin_search: str):
         """Search coins in own database (if table exists)
 
         Show the results
@@ -157,7 +157,7 @@ class CoinSearchCoingecko(CoinSearch):
         self.print_search_result(db_result, 'Database')
 
         # Do search on coingecko
-        cs_result = self.search_id_web(req, coin_search)
+        cs_result = self.search_id_web(coin_search)
         self.print_search_result(cs_result, 'CoinGecko', ['thumb', 'large'])
 
         # ask user which row is the correct answer
@@ -166,7 +166,7 @@ class CoinSearchCoingecko(CoinSearch):
 
         # if coin is selected, add to database (replace or add new row in db?)
         # go back to search question / exit
-        self.handle_user_input(req, db, user_input, cs_result, 'id', 'name')
+        self.handle_user_input(db, user_input, cs_result, 'id', 'name')
 
     def get_all_assets(self, req: RequestHelper):
         """Get all assets from Coingecko
@@ -206,7 +206,6 @@ def __main__():
 
     # init session
     cs = CoinSearchCoingecko()
-    req = RequestHelper()
     if config.DB_TYPE == 'sqlite':
         db = DbSqlite3(config.DB_CONFIG)
     elif config.DB_TYPE == 'postgresql':
@@ -219,14 +218,14 @@ def __main__():
 
     if args.image:
         if db_table_exist:
-            cs.download_images(req, db)
+            cs.download_images(db)
         else:
             print('No database, exiting')
     else:
         while True:
             if coin_search == None:
                 coin_search = input('Search for coin: ')
-            cs.search(req, db, coin_search)
+            cs.search(db, coin_search)
             coin_search = None
 
 

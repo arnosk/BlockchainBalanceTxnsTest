@@ -26,7 +26,7 @@ class CoinSearchAlcor(CoinSearch):
         self.table_name = DbHelper.DbTableName.coinAlcor.name
         super().__init__()
 
-    def insert_coin(self, req: RequestHelper, db: Db, params: dict) -> int:
+    def insert_coin(self, db: Db, params: dict) -> int:
         """Insert a new coin to the coins table
 
         req = instance of RequestHelper
@@ -102,7 +102,7 @@ class CoinSearchAlcor(CoinSearch):
                             '''.format(self.table_name)
         return coin_search_query
 
-    def search(self, req: RequestHelper, db: Db, coin_search: str, assets: dict):
+    def search(self, db: Db, coin_search: str, assets: dict):
         """Search coins in own database (if table exists)
 
         Show the results
@@ -133,9 +133,9 @@ class CoinSearchAlcor(CoinSearch):
 
         # if coin is selected, add to database (replace or add new row in db?)
         # go back to search question / exit
-        self.handle_user_input(req, db, user_input, cs_result, 'id', 'ticker')
+        self.handle_user_input(db, user_input, cs_result, 'id', 'ticker')
 
-    def get_all_assets(self, req: RequestHelper, chains: list) -> dict:
+    def get_all_assets(self, chains: list) -> dict:
         '''Retrieve all assets from alcor api
 
         req = instance of RequestHelper
@@ -146,7 +146,7 @@ class CoinSearchAlcor(CoinSearch):
         coin_assets = {}
         for chain in chains:
             url_list = config.ALCOR_URL.replace('?', chain) + '/markets'
-            resp = req.get_request_response(url_list)
+            resp = self.req.get_request_response(url_list)
             coin_assets[chain] = resp['result']
         return coin_assets
 
@@ -175,7 +175,6 @@ def __main__():
 
     # init session
     cs = CoinSearchAlcor()
-    req = RequestHelper()
     if config.DB_TYPE == 'sqlite':
         db = DbSqlite3(config.DB_CONFIG)
     elif config.DB_TYPE == 'postgresql':
@@ -187,12 +186,12 @@ def __main__():
     db.check_table(cs.table_name)
 
     # get all assets from Alcor
-    coin_assets = cs.get_all_assets(req, chains)
+    coin_assets = cs.get_all_assets(chains)
 
     while coin_assets != None:
         if coin_search == None:
             coin_search = input('Search for coin: ')
-        cs.search(req, db, coin_search, coin_assets)
+        cs.search(db, coin_search, coin_assets)
         coin_search = None
 
 

@@ -26,7 +26,10 @@ class CoinSearchCryptowatch(CoinSearch):
         self.table_name = DbHelper.DbTableName.coinCryptowatch.name
         super().__init__()
 
-    def insert_coin(self, req: RequestHelper, db: Db, params: dict) -> int:
+        # Update header of request session with user API key 
+        self.req.update_header({'X-CW-API-Key': config.CRYPTOWATCH_API})
+
+    def insert_coin(self, db: Db, params: dict) -> int:
         """Insert a new coin to the coins table
 
         req = instance of RequestHelper
@@ -77,7 +80,7 @@ class CoinSearchCryptowatch(CoinSearch):
                             '''.format(self.table_name)
         return coin_search_query
 
-    def search(self, req: RequestHelper, db: Db, coin_search: str, assets: list):
+    def search(self, db: Db, coin_search: str, assets: list):
         """Search coins in own database (if table exists)
 
         Show the results
@@ -107,9 +110,9 @@ class CoinSearchCryptowatch(CoinSearch):
 
         # if coin is selected, add to database (replace or add new row in db?)
         # go back to search question / exit
-        self.handle_user_input(req, db, user_input, cs_result, 'sid', 'name')
+        self.handle_user_input(db, user_input, cs_result, 'sid', 'name')
 
-    def get_all_assets(self, req: RequestHelper) -> list:
+    def get_all_assets(self) -> list:
         '''Retrieve all assets from cryptowatch api
 
         req = instance of RequestHelper
@@ -117,7 +120,7 @@ class CoinSearchCryptowatch(CoinSearch):
         returns = a list of string with assets from Alcor
         '''
         url_list = config.CRYPTOWATCH_URL + '/assets'
-        resp = req.get_request_response(url_list)
+        resp = self.req.get_request_response(url_list)
         coin_assets = resp['result']
         return coin_assets
 
@@ -149,12 +152,12 @@ def __main__():
     db.check_table(cs.table_name)
 
     # get all assets from cryptowatch
-    coin_assets = cs.get_all_assets(req)
+    coin_assets = cs.get_all_assets()
 
     while coin_assets != None:
         if coin_search == None:
             coin_search = input('Search for coin: ')
-        cs.search(req, db, coin_search, coin_assets)
+        cs.search(db, coin_search, coin_assets)
         coin_search = None
 
 
