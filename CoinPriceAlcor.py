@@ -56,7 +56,7 @@ class CoinPriceAlcor(CoinPrice):
 
         return prices
 
-    def get_price_current(self, coins, **kwargs):
+    def get_price_current(self, coins, **kwargs) -> dict:
         """Get alcor current price
 
         coins = list of market id and chain
@@ -94,7 +94,7 @@ class CoinPriceAlcor(CoinPrice):
         #resp = convert_timestamp_lastupdated(resp)
         return prices
 
-    def get_price_hist_marketchart(self, coins, date):
+    def get_price_hist_marketchart(self, coins, date) -> dict:
         """Get alcor history price of a coin via market chart data
 
         coins = list of [chain, coinid] with assets or token contracts for market base
