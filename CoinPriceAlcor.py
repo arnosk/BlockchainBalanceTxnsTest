@@ -7,7 +7,6 @@ Collecting prices
 
 Alcor
 """
-import argparse
 import copy
 import json
 import re
@@ -19,7 +18,7 @@ from dateutil import parser
 
 import config
 import DbHelper
-from CoinPrice import CoinPrice
+from CoinPrice import CoinPrice, add_standard_arguments
 from Db import Db
 from DbPostgresql import DbPostgresql
 from DbSqlite3 import DbSqlite3
@@ -187,18 +186,9 @@ def __main__():
     - coin search prices for specfic coin
     - output file for saving ress in a csv file
     """
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument('-d', '--date', type=str,
-                           help='Historical date to search on Alcor, format: 2011-11-04T00:05:23+04:00',
-                           default='2022-05-01T23:00')
-    argparser.add_argument('-c', '--coin', type=str,
-                           help='List of coins to search on Alcor')
+    argparser = add_standard_arguments('Alcor')
     argparser.add_argument('-ch', '--chain', type=str,
-                           help='Chain to search on Alcor')
-    argparser.add_argument('-oc', '--output_csv', type=str,
-                           help='Filename and path to output CSV file', required=False)
-    argparser.add_argument('-ox', '--output_xls', type=str,
-                           help='Filename and path to the output Excel file', required=False)
+                            help='Chain to search on Alcor')
     args = argparser.parse_args()
     date = args.date
     coin_str = args.coin

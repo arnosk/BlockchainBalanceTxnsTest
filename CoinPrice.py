@@ -6,8 +6,8 @@ Created on October 15, 2022
 Base Class CoinPrice
 
 """
+from argparse import ArgumentParser
 import re
-import sys
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from pathlib import Path
@@ -85,3 +85,23 @@ class CoinPrice(ABC):
             df.to_excel(filepath)
             print('File written: %s' % (filepath))
 
+
+def add_standard_arguments(exchange: str = '') -> ArgumentParser:
+    """Add default arguments
+
+    Only used in standalone running from command prompt
+    """
+    if exchange != '':
+        exchange = f' on {exchange}'
+
+    argparser = ArgumentParser()
+    argparser.add_argument('-d', '--date', type=str,
+                           help=f'Historical date to search{exchange}, format: 2011-11-04T00:05:23+04:00',
+                           default='2022-05-01T23:00')
+    argparser.add_argument('-c', '--coin', type=str,
+                           help=f'List of coins to search{exchange}', required=False)
+    argparser.add_argument('-oc', '--output_csv', type=str,
+                           help='Filename and path to output CSV file', required=False)
+    argparser.add_argument('-ox', '--output_xls', type=str,
+                           help='Filename and path to the output Excel file', required=False)
+    return argparser

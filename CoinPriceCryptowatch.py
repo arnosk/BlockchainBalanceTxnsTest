@@ -7,7 +7,6 @@ Collecting prices
 
 From Cryptowatch
 """
-import argparse
 import json
 import re
 from datetime import datetime
@@ -20,7 +19,7 @@ from dateutil import parser
 import CoinPrice
 import config
 import DbHelper
-from CoinPrice import CoinPrice
+from CoinPrice import CoinPrice, add_standard_arguments
 from Db import Db
 from DbPostgresql import DbPostgresql
 from DbSqlite3 import DbSqlite3
@@ -279,16 +278,7 @@ def __main__():
     - output file for saving results in a csv file
     - max markets per pair, 0 is no maximum
     """
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument('-d', '--date', type=str,
-                           help='Historical date to search on Cryptowatch, format: 2011-11-04T00:05:23+04:00',
-                           default='2022-05-01T23:00')
-    argparser.add_argument('-c', '--coin', type=str,
-                           help='List of coins to search on Cryptowatch')
-    argparser.add_argument('-oc', '--output_csv', type=str,
-                           help='Filename and path to output CSV file', required=False)
-    argparser.add_argument('-ox', '--output_xls', type=str,
-                           help='Filename and path to the output Excel file', required=False)
+    argparser = add_standard_arguments('Cryptowatch')
     argparser.add_argument('-mp', '--max_markets_per_pair', type=int,
                            help='Maximum markets per pair, 0 is no max', default=1)
     args = argparser.parse_args()
