@@ -32,7 +32,18 @@ class CoinPrice(ABC):
         #sys.stdout.write("Retrieving nr {:3d} of {}\r".format(nr, total))
         # sys.stdout.flush()
 
-    def convert_timestamp(self, ts, ms=False):
+    def convert_timestamp_n(self, ts: int, ms: bool=False) -> datetime:
+        """Convert timestamp to date string
+
+        ts = timestamp in sec if ms = False
+        ts = timestamp in msec if ms = True
+        """
+        if ms:
+            ts = int(ts/1000)
+        dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+        return dt
+
+    def convert_timestamp(self, ts, ms=False) -> str:
         """Convert timestamp to date string
 
         ts = timestamp in sec if ms = False
