@@ -32,29 +32,6 @@ class CoinPriceCoingecko(CoinPrice):
         self.table_name = DbHelper.DbTableName.coinCoingecko.name
         super().__init__()
 
-    def OLD_add_coin_symbol(self, db: Db, prices: dict):
-        """Adds a new column with the symbol name
-
-        Symbol name is retrieved from the database
-
-        db = instance of Db
-        prices = a dictionary with coin id from coingecko and prices
-        """
-        coins = db.query(
-            'SELECT siteid, symbol FROM {}'.format(self.table_name))
-        for price_key, price_val in prices.items():
-            #print(price_val, price_key)
-            if isinstance(price_val, dict):
-                for coin_key, coin_val in coins:
-                    if price_key == coin_key:
-                        price_val['symbol'] = coin_val
-            if isinstance(price_val, list):
-                for coin_key, coin_val in coins:
-                    if price_key == coin_key:
-                        price_val.append(coin_val)
-
-        return prices
-
     def get_price_current(self, coindata: list[CoinData], currencies: list[str]) -> list[CoinPriceData]:
         """Get coingecko current price
 
