@@ -19,7 +19,6 @@ class CoinData:
     name: str = ''
     symbol: str = ''
     chain: str = '' #Optional[str] = ''
-    #curr: Optional[str] = ''
 
     def __post_init__(self):
         """Set coin name when not given
@@ -37,7 +36,7 @@ class CoinPriceData:
     date: datetime # = field(default_factory=datetime.utcnow)
     coin: CoinData
     curr: str = ''
-    exchange: str = ''
+    exchange: str = '' # is in fact marketdata
     price: float = 0
     volume: float = 0
     active: bool = True

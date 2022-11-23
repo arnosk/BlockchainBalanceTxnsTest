@@ -42,9 +42,7 @@ class CoinPriceAlcor(CoinPrice):
         # make dict with coins list per chain (key)
         coin_srch: dict[str, list[CoinData]] = {}
         for coin in coindata:
-            key_chain = coin.chain
-            val_coin = coin
-            coin_srch.setdefault(key_chain, []).append(val_coin)
+            coin_srch.setdefault(coin.chain, []).append(coin)
 
         # get all market data per chain, and then search through that list for the id's
         prices: list[CoinPriceData] = []
@@ -56,6 +54,7 @@ class CoinPriceAlcor(CoinPrice):
             for item in resp['result']:
                 for coin in val_coins:
                     if item['id'] == coin.siteid:
+                        coin.name = item['quote_token']['str']
                         coin.symbol = item['quote_token']['symbol']['name']
                         coin_price_data = CoinPriceData(
                             date=datetime.now(),

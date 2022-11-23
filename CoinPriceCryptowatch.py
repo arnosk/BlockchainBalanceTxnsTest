@@ -42,7 +42,6 @@ class CoinPriceCryptowatch(CoinPrice):
         allowance_str = json.dumps(allowance)[1:50]
         print('\r'+allowance_str.rjust(80), end='', flush=True)
 
-    # def get_markets(self, coins, curr, strictness=0):
     def get_markets(self, coindata: list[CoinData], currencies: list[str], strictness=0) -> list[CoinMarketData]:
         """Get cryptowatch markets for chosen coins
 
@@ -217,7 +216,6 @@ class CoinPriceCryptowatch(CoinPrice):
                             price=resp['result']['3600'][0][1],  # open
                             volume=resp['result']['3600'][0][5],  # volume
                             active=market.active))
-                        # 'close':resp['result']['3600'][0][4],
                     else:
                         prices.append(CoinPriceData(
                             date=dt,
@@ -263,8 +261,6 @@ class CoinPriceCryptowatch(CoinPrice):
             # sort list of dictionaries of same pair on volume
             val_prices_sorted = sorted(val_prices,
                                        key=lambda d: d.volume,
-                                       # -1 if isinstance(
-                                       #    d['volume'], str) else d['volume'],
                                        reverse=True)
 
             # get the first x price items

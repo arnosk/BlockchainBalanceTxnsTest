@@ -51,7 +51,7 @@ class CoinPriceCoingecko(CoinPrice):
         resp = self.req.get_request_response(url)
 
         # remove status_code from dictionary
-        resp.pop('status_code')
+        #resp.pop('status_code')
 
         # create list of CoinPriceData from respone
         prices: list[CoinPriceData] = []
@@ -124,10 +124,6 @@ class CoinPriceCoingecko(CoinPrice):
             url = '{}/coins/{}/history?date={}&localization=false'.format(
                 config.COINGECKO_URL, coin.siteid, date)
             resp = self.req.get_request_response(url)
-            market_data_exist = 'market_data' in resp
-            #print('coin:', coin)
-            #print('price of '+coin+' '+date+': ', resp['market_data']['current_price'][currency],currency)
-            #print('MarketCap of '+coin+' '+date+': ', resp['market_data']['market_cap'][currency],currency)
 
             if resp['status_code'] == 'error':
                 # got no status from request, must be an error
@@ -147,7 +143,7 @@ class CoinPriceCoingecko(CoinPrice):
                     error = 'no data found'
 
                     # get data from respones
-                    if market_data_exist:
+                    if 'market_data' in resp:
                         if currency in resp['market_data']['current_price']:
                             price=resp['market_data']['current_price'][currency]
                             volume=resp['market_data']['total_volume'][currency]
