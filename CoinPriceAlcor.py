@@ -15,6 +15,7 @@ from datetime import datetime
 import openpyxl
 import pandas as pd
 from dateutil import parser
+from CoinData import CoinData
 
 import config
 import DbHelper
@@ -220,14 +221,17 @@ def __main__():
     if coin_str != None:
         coins = re.split('[;,]', coin_str)
         chain = chain_str if chain_str != None else 'proton'
+        coin_data = [CoinData(siteid=i, chain=chain) for i in coins]
         coins = [[chain, i] for i in coins]
     elif db_table_exist:
         coins = db.query(
             'SELECT chain, siteid, quote, base FROM {}'.format(cp.table_name))
+        coin_data = [CoinData(chain=i[0], siteid=i[1], name=i[2], symbol=i[3]) for i in coins] # symbol = base???
         coins = [[i[0], i[1], i[2], i[3]] for i in coins]
     else:
         coins = [['proton', 157], ['wax', 158], ['proton', 13], ['wax', 67],
                  ['proton', 5], ['eos', 2], ['telos', 34], ['proton', 96]]
+        coin_data = [CoinData(siteid=i[1], chain=i[0]) for i in coins]
 
     # For testing
     #coins = [['proton', 157], ['wax', 158], ['proton', 13], ['wax', 67], ['proton', 5], ['eos', 2], ['telos', 34], ['proton', 96]]

@@ -79,7 +79,7 @@ class CoinPrice(ABC):
         filename CSV file = config.OUTPUT_PATH+output_csv+suffix.csv
         filename XLS file = config.OUTPUT_PATH+output_xls+suffix.xlsx
         """
-        suffix = re.sub('[:;,!@#$%^&*()]', '', suffix)
+        suffix = re.sub(r'[:;,!@#$%^&*()]', '', suffix)
         outputpath = config.OUTPUT_PATH
         if outputpath != '':
             outputpath = outputpath + '\\'

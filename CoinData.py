@@ -16,17 +16,17 @@ class CoinData:
     """Dataclass for coin data
     """
     siteid: str
-    name: str = ""
-    symbol: str = ""
-    chain: Optional[str] = ""
-    #curr: Optional[str] = ""
+    name: str = ''
+    symbol: str = ''
+    chain: Optional[str] = ''
+    #curr: Optional[str] = ''
 
     def __post_init__(self):
         """Set coin name when not given
 
         Used when manual input
         """
-        if self.name is "":
+        if self.name is '':
             self.name = self.siteid
 
 
@@ -36,8 +36,22 @@ class CoinPriceData:
     """
     date: datetime # = field(default_factory=datetime.utcnow)
     coin: CoinData
-    curr: str = ""
+    curr: str = ''
+    exchange: str = ''
     price: float = 0
     volume: float = 0
     active: bool = True
-    error: str = ""
+    error: str = ''
+
+@dataclass
+class CoinMarketData:
+    """Dataclass for coin market
+    """
+    coin: CoinData
+    curr: str = ''
+    exchange: str = ''
+    pair: str = ''
+    active: bool = True
+    error: str = ''
+    route: str = ''
+
