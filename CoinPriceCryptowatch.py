@@ -78,7 +78,7 @@ class CoinPriceCryptowatch(CoinPrice):
                         # Strict/Exact filter only quote from currencies
                         res_filter = list(
                             filter(lambda r: r['pair'].replace(coin.symbol, '') in currencies, res))
-                            #filter(lambda r: r['curr'] in currencies, res))
+                        # filter(lambda r: r['curr'] in currencies, res))
 
                         # check if markets are found, else don't filter
                         if len(res_filter) > 0:
@@ -144,9 +144,9 @@ class CoinPriceCryptowatch(CoinPrice):
                 if resp['status_code'] == 'error':
                     # got no status from request, must be an error
                     prices.append(CoinPriceData(
-                        date=parser.parse(current_date), 
+                        date=parser.parse(current_date),
                         coin=market.coin,
-                        curr=market.curr, 
+                        curr=market.curr,
                         exchange=market.exchange,
                         price=math.nan,
                         volume=math.nan,
@@ -154,11 +154,11 @@ class CoinPriceCryptowatch(CoinPrice):
                         error=resp['error']))
                 else:
                     prices.append(CoinPriceData(
-                        date=parser.parse(current_date), 
+                        date=parser.parse(current_date),
                         coin=market.coin,
-                        curr=market.curr, 
+                        curr=market.curr,
                         exchange=market.exchange,
-                        price=resp['result']['price']['last'], 
+                        price=resp['result']['price']['last'],
                         volume=resp['result']['volume'],
                         active=market.active))
 
@@ -201,9 +201,9 @@ class CoinPriceCryptowatch(CoinPrice):
                 if resp['status_code'] == 'error':
                     # got no status from request, must be an error
                     prices.append(CoinPriceData(
-                        date=dt, 
+                        date=dt,
                         coin=market.coin,
-                        curr=market.curr, 
+                        curr=market.curr,
                         exchange=market.exchange,
                         price=math.nan,
                         volume=math.nan,
@@ -212,19 +212,20 @@ class CoinPriceCryptowatch(CoinPrice):
                 else:
                     if len(resp['result']['3600']) > 0:
                         prices.append(CoinPriceData(
-                            date=self.convert_timestamp_n(resp['result']['3600'][0][0]),
+                            date=self.convert_timestamp_n(
+                                resp['result']['3600'][0][0]),
                             coin=market.coin,
-                            curr=market.curr, 
+                            curr=market.curr,
                             exchange=market.exchange,
-                            price=resp['result']['3600'][0][1], # open
-                            volume=resp['result']['3600'][0][5], # volume
+                            price=resp['result']['3600'][0][1],  # open
+                            volume=resp['result']['3600'][0][5],  # volume
                             active=market.active))
-                            #'close':resp['result']['3600'][0][4],
+                        # 'close':resp['result']['3600'][0][4],
                     else:
                         prices.append(CoinPriceData(
-                            date=dt, 
+                            date=dt,
                             coin=market.coin,
-                            curr=market.curr, 
+                            curr=market.curr,
                             exchange=market.exchange,
                             price=math.nan,
                             volume=math.nan,
@@ -265,7 +266,7 @@ class CoinPriceCryptowatch(CoinPrice):
             # sort list of dictionaries of same pair on volume
             val_prices_sorted = sorted(val_prices,
                                        key=lambda d: d.volume,
-                                       #-1 if isinstance(
+                                       # -1 if isinstance(
                                        #    d['volume'], str) else d['volume'],
                                        reverse=True)
 
@@ -352,7 +353,7 @@ def __main__():
     if len(price) > 0:
         df = pd.json_normalize(data=[asdict(obj) for obj in price])
         df.sort_values(by=['coin.name', 'curr'],
-                    key=lambda col: col.str.lower(), inplace=True)
+                       key=lambda col: col.str.lower(), inplace=True)
         print(df)
         cp.write_to_file(df, output_csv, output_xls,
                          '_current_coins_%s' % (current_date))
@@ -367,7 +368,7 @@ def __main__():
     if len(price) > 0:
         df = pd.json_normalize(data=[asdict(obj) for obj in price])
         df.sort_values(by=['coin.name', 'curr'],
-                    key=lambda col: col.str.lower(), inplace=True)
+                       key=lambda col: col.str.lower(), inplace=True)
         print(df)
         cp.write_to_file(df, output_csv, output_xls,
                          '_hist_marketchart_%s' % (date))

@@ -18,7 +18,7 @@ class CoinData:
     siteid: str
     name: str = ''
     symbol: str = ''
-    chain: Optional[str] = ''
+    chain: str = '' #Optional[str] = ''
     #curr: Optional[str] = ''
 
     def __post_init__(self):
@@ -26,7 +26,7 @@ class CoinData:
 
         Used when manual input
         """
-        if self.name is '':
+        if self.name == '':
             self.name = self.siteid
 
 

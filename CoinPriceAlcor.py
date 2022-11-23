@@ -8,14 +8,16 @@ Collecting prices
 Alcor
 """
 import copy
+from dataclasses import asdict
 import json
+import math
 import re
 from datetime import datetime
 
 import openpyxl
 import pandas as pd
 from dateutil import parser
-from CoinData import CoinData
+from CoinData import CoinData, CoinPriceData
 
 import config
 import DbHelper
@@ -33,74 +35,44 @@ class CoinPriceAlcor(CoinPrice):
         self.table_name = DbHelper.DbTableName.coinAlcor.name
         super().__init__()
 
-    def add_coin_symbol(self, db: Db, prices: dict):
-        """Adds a new column with the symbol name
-
-        Symbol name is retrieved from the database
-
-        db = instance of Db
-        prices = a dictionary with coin id from Alcor and prices
-        """
-        coins = db.query(
-            'SELECT siteid, quote FROM {}'.format(self.table_name))
-        for price_key, price_val in prices.items():
-            #print(price_val, price_key)
-            if isinstance(price_val, dict):
-                for coin_key, coin_val in coins:
-                    if price_key == coin_key:
-                        price_val['symbol'] = coin_val
-            if isinstance(price_val, list):
-                for coin_key, coin_val in coins:
-                    if price_key == coin_key:
-                        price_val.append(coin_val)
-
-        return prices
-
-    def get_price_current(self, coins, **kwargs) -> dict:
+    def get_price_current(self, coindata: list[CoinData]) -> list[CoinPriceData]:
         """Get alcor current price
 
         coins = list of market id and chain
         **kwargs = extra arguments in url 
         """
-        # refactor coins list into dict a list of id's (value) per chain (key)
+        # make dict with coins list per chain (key)
         coin_srch = {}
-        for item in coins:
-            key_chain = item[0]
-            val_coin = item[1]
+        for coin in coindata:
+            key_chain = coin.chain
+            val_coin = coin
             coin_srch.setdefault(key_chain, []).append(val_coin)
 
         # get all market data per chain, and then search through that list for the id's
-        prices = {}
+        prices = []
         for key_chain, val_coins in coin_srch.items():
             url = config.ALCOR_URL.replace('?', key_chain) + '/markets'
-            url = self.req.api_url_params(url, kwargs)
             resp = self.req.get_request_response(url)
 
-            # remove status_code from dictionary
-            # resp.pop('status_code')
-
-            #res_coins = []
+            # search through result for coin in the list
             for item in resp['result']:
-                if item['id'] in val_coins:
-                    # res_coins.append(item)
-                    prices.setdefault(item['quote_token']['str'], []).append(
-                        item['last_price'])
-                    prices.setdefault(item['quote_token']['str'], []).append(
-                        item['base_token']['str'])
+                for coin in val_coins:
+                    if item['id'] == coin.siteid:
+                        prices.append(CoinPriceData(
+                            date=datetime.now(),
+                            coin=coin,
+                            curr=item['base_token']['str'],
+                            price=item['last_price'],
+                            volume=item['volume24']))
 
-            # prices.append(res_coins)
-
-        # convert timestamp to date
-        #resp = convert_timestamp_lastupdated(resp)
         return prices
 
-    def get_price_hist_marketchart(self, coins, date) -> dict:
+    def get_price_hist_marketchart(self, coindata: list[CoinData], date) -> list[CoinPriceData]:
         """Get alcor history price of a coin via market chart data
 
         coins = list of [chain, coinid] with assets or token contracts for market base
         date = historical date 
         """
-
         # convert date to unix timestamp
         dt = parser.parse(date)  # local time
         ts = int(dt.timestamp())
@@ -108,27 +80,22 @@ class CoinPriceAlcor(CoinPrice):
         # make parameters
         params = {}
         params['resolution'] = 60
-        params['from'] = ts  # -3600
-        params['to'] = ts  # +3600
+        params['from'] = ts - 3600
+        params['to'] = ts + 3600
 
-        prices = {}
+        prices = []
         i = 0
-        for coin in coins:
+        for coin in coindata:
             i += 1
-            self.show_progress(i, len(coins))
+            self.show_progress(i, len(coindata))
+
+            # get coin base
+            coin_base = ''  # curr from previous
 
             url = config.ALCOR_URL.replace(
-                '?', coin[0]) + '/markets/{}/charts'.format(coin[1])
+                '?', coin.chain) + '/markets/{}/charts'.format(coin.siteid)
             params_try = copy.deepcopy(params)
             nr_try = 1
-
-            # get coin name
-            if len(coin) > 2:
-                coin_name = coin[2]
-                coin_base = coin[3]
-            else:
-                coin_name = str(coin[1]).zfill(3)
-                coin_base = '-'
 
             # try to get history data from and to specific date
             # increase time range until data is found
@@ -139,42 +106,54 @@ class CoinPriceAlcor(CoinPrice):
                 # check for correct res
                 if resp['status_code'] == 'error':
                     # got no status from request, must be an error
-                    prices[coin_name] = [resp['error'], 0, coin_base]
+                    prices.append(CoinPriceData(
+                        date=dt,
+                        coin=coin,
+                        curr=coin_base,
+                        price=math.nan,
+                        volume=math.nan,
+                        error=resp['error']))
                     break
 
                 else:
                     res = resp['result']
 
                     if len(res) > 0:
-                        # select res with timestamp nearest to desired date ts
+                        # select result with timestamp nearest to desired date ts
                         res_minimal = {}
-                        timediff_minimal = -1
+                        timediff_minimal = 10**20
                         for res in res:
                             timediff = abs(ts*1000 - res['time'])
-                            if timediff < timediff_minimal or timediff_minimal == -1:
+                            if timediff < timediff_minimal:
                                 # remember record
                                 res_minimal = res
                                 timediff_minimal = timediff
 
-                        # convert timestamp to date
-                        res_minimal['time'] = self.convert_timestamp(
-                            res_minimal['time'], True)
-
-                        # take first record?
-                        prices[coin_name] = [res_minimal['time'],
-                                             res_minimal['open'], coin_base]
+                        # record
+                        prices.append(CoinPriceData(
+                            date=self.convert_timestamp_n(res_minimal['time'], True),
+                            coin=coin,
+                            curr=coin_base,
+                            price=res_minimal['open'],
+                            volume=res_minimal['volume']))
                         break
 
                     elif nr_try > 10:
                         # if too many retries for date ranges, stop
-                        prices[coin_name] = ['no data', 0, coin_base]
+                        prices.append(CoinPriceData(
+                            date=dt,
+                            coin=coin,
+                            curr=coin_base,
+                            price=math.nan,
+                            volume=math.nan,
+                            error=resp['no data found']))
                         break
 
                     else:
                         # retry same coin with new date range
-                        params_try['from'] -= 2**nr_try * 3600
-                        params_try['to'] += 2**nr_try * 3600
                         nr_try += 1
+                        params_try['from'] -= 2**(2*nr_try) * 3600
+                        params_try['to'] += 2**(2*nr_try) * 3600
 
         return prices
 
@@ -189,7 +168,7 @@ def __main__():
     """
     argparser = add_standard_arguments('Alcor')
     argparser.add_argument('-ch', '--chain', type=str,
-                            help='Chain to search on Alcor')
+                           help='Chain to search on Alcor')
     args = argparser.parse_args()
     date = args.date
     coin_str = args.coin
@@ -226,22 +205,19 @@ def __main__():
     elif db_table_exist:
         coins = db.query(
             'SELECT chain, siteid, quote, base FROM {}'.format(cp.table_name))
-        coin_data = [CoinData(chain=i[0], siteid=i[1], name=i[2], symbol=i[3]) for i in coins] # symbol = base???
+        coin_data = [CoinData(chain=i[0], siteid=i[1], name=i[2])
+                     for i in coins]  # symbol=i[3] = base???
         coins = [[i[0], i[1], i[2], i[3]] for i in coins]
     else:
         coins = [['proton', 157], ['wax', 158], ['proton', 13], ['wax', 67],
                  ['proton', 5], ['eos', 2], ['telos', 34], ['proton', 96]]
         coin_data = [CoinData(siteid=i[1], chain=i[0]) for i in coins]
 
-    # For testing
-    #coins = [['proton', 157], ['wax', 158], ['proton', 13], ['wax', 67], ['proton', 5], ['eos', 2], ['telos', 34], ['proton', 96]]
-
     print('* Current price of coins')
-    price = cp.get_price_current(coins)
-    # if db_exist:
-    #    price = add_coin_symbol(db, price)
-    df = pd.DataFrame(price).transpose()
-    df = df.sort_index(key=lambda x: x.str.lower())
+    price = cp.get_price_current(coin_data)
+    df = pd.json_normalize(data=[asdict(obj) for obj in price])
+    df.sort_values(by=['coin.name', 'curr'],
+                   key=lambda col: col.str.lower(), inplace=True)
     print()
     print(df)
     cp.write_to_file(df, output_csv, output_xls,
@@ -249,11 +225,10 @@ def __main__():
     print()
 
     print('* History price of coins via market_chart')
-    price = cp.get_price_hist_marketchart(coins, date)
-    # if db_exist:
-    #    price = _c(db_s price)
-    df = pd.DataFrame(price).transpose()
-    df = df.sort_index(key=lambda x: x.str.lower())
+    price = cp.get_price_hist_marketchart(coin_data, date)
+    df = pd.json_normalize(data=[asdict(obj) for obj in price])
+    df.sort_values(by=['coin.name', 'curr'],
+                   key=lambda col: col.str.lower(), inplace=True)
     print()
     print(df)
     cp.write_to_file(df, output_csv, output_xls,
