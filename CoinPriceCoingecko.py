@@ -50,9 +50,6 @@ class CoinPriceCoingecko(CoinPrice):
         url = self.req.api_url_params(url, params)
         resp = self.req.get_request_response(url)
 
-        # remove status_code from dictionary
-        #resp.pop('status_code')
-
         # create list of CoinPriceData from respone
         prices: list[CoinPriceData] = []
         for resp_key, resp_val in resp.items():
