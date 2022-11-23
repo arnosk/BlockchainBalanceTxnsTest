@@ -7,14 +7,11 @@ Collecting prices
 
 From Cryptowatch
 """
-from dataclasses import asdict
 import json
 import math
 import re
 from datetime import datetime
-from tracemalloc import reset_peak
 
-import openpyxl
 import pandas as pd
 from dateutil import parser
 from CoinData import CoinData, CoinMarketData, CoinPriceData
@@ -59,7 +56,7 @@ class CoinPriceCryptowatch(CoinPrice):
 
         NOT Doing this anymore: if coin does not exist as base, try as quote
         """
-        markets = []
+        markets: list[CoinMarketData] = []
         for coin in coindata:
             url = config.CRYPTOWATCH_URL + '/assets/' + coin.symbol
             resp = self.req.get_request_response(url)
@@ -129,7 +126,7 @@ class CoinPriceCryptowatch(CoinPrice):
 
         markets = all market pairs and exchange to get price
         """
-        prices = []
+        prices: list[CoinPriceData] = []
         i = 0
         current_date = datetime.now().strftime('%Y-%m-%d %H:%M')
         for market in markets:
@@ -188,7 +185,7 @@ class CoinPriceCryptowatch(CoinPrice):
         params['before'] = ts
         params['periods'] = 3600
 
-        prices = []
+        prices: list[CoinPriceData] = []
         i = 0
         for market in markets:
             i += 1
@@ -252,7 +249,7 @@ class CoinPriceCryptowatch(CoinPrice):
             return prices
 
         # make new dictionary, with pair as key, list of price as value
-        price_per_pair = {}
+        price_per_pair: dict[str, list[CoinPriceData]] = {}
         for price in prices:
             if price.volume > 0:
                 pair = f'{price.coin.symbol}{price.curr}'
@@ -261,7 +258,7 @@ class CoinPriceCryptowatch(CoinPrice):
                 price_per_pair[pair].append(price)
 
         # make new list of prices with max markets per pair
-        new_prices = []
+        new_prices: list[CoinPriceData] = []
         for val_prices in price_per_pair.values():
             # sort list of dictionaries of same pair on volume
             val_prices_sorted = sorted(val_prices,
@@ -301,12 +298,6 @@ def __main__():
     max_markets_per_pair = args.max_markets_per_pair
     current_date = datetime.now().strftime('%Y-%m-%d %H:%M')
     print('Current date:', current_date)
-
-    # init pandas displaying
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.max_colwidth', 20)
-    pd.set_option('display.float_format', '{:.6e}'.format)
 
     # init session
     cp = CoinPriceCryptowatch()
@@ -349,31 +340,17 @@ def __main__():
     print('* Current price of coins')
     price = cp.get_price_current(markets)
     price = cp.filter_marketpair_on_volume(price, max_markets_per_pair)
-    print()
-    if len(price) > 0:
-        df = pd.json_normalize(data=[asdict(obj) for obj in price])
-        df.sort_values(by=['coin.name', 'curr'],
-                       key=lambda col: col.str.lower(), inplace=True)
-        print(df)
-        cp.write_to_file(df, output_csv, output_xls,
-                         '_current_coins_%s' % (current_date))
-    else:
-        print('No data')
+    cp.print_coinpricedata(price)
+    cp.write_to_file(price, output_csv, output_xls,
+                     '_current_coins_%s' % (current_date))
     print()
 
     print('* History price of coins via market_chart')
     price = cp.get_price_hist_marketchart(markets, date)
     price = cp.filter_marketpair_on_volume(price, max_markets_per_pair)
-    print()
-    if len(price) > 0:
-        df = pd.json_normalize(data=[asdict(obj) for obj in price])
-        df.sort_values(by=['coin.name', 'curr'],
-                       key=lambda col: col.str.lower(), inplace=True)
-        print(df)
-        cp.write_to_file(df, output_csv, output_xls,
-                         '_hist_marketchart_%s' % (date))
-    else:
-        print('No data')
+    cp.print_coinpricedata(price)
+    cp.write_to_file(price, output_csv, output_xls,
+                     '_hist_marketchart_%s' % (current_date))
     print()
 
 

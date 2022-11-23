@@ -8,16 +8,13 @@ Collecting prices
 Alcor
 """
 import copy
-from dataclasses import asdict
-import json
 import math
 import re
 from datetime import datetime
+from typing import Dict
 
-import openpyxl
-import pandas as pd
 from dateutil import parser
-from CoinData import CoinData, CoinPriceData
+from CoinData import CoinData, CoinMarketData, CoinPriceData
 
 import config
 import DbHelper
@@ -33,6 +30,7 @@ class CoinPriceAlcor(CoinPrice):
 
     def __init__(self) -> None:
         self.table_name = DbHelper.DbTableName.coinAlcor.name
+        self.markets: dict[str, CoinMarketData] = {}
         super().__init__()
 
     def get_price_current(self, coindata: list[CoinData]) -> list[CoinPriceData]:
@@ -42,14 +40,14 @@ class CoinPriceAlcor(CoinPrice):
         **kwargs = extra arguments in url 
         """
         # make dict with coins list per chain (key)
-        coin_srch = {}
+        coin_srch: dict[str, list[CoinData]] = {}
         for coin in coindata:
             key_chain = coin.chain
             val_coin = coin
             coin_srch.setdefault(key_chain, []).append(val_coin)
 
         # get all market data per chain, and then search through that list for the id's
-        prices = []
+        prices: list[CoinPriceData] = []
         for key_chain, val_coins in coin_srch.items():
             url = config.ALCOR_URL.replace('?', key_chain) + '/markets'
             resp = self.req.get_request_response(url)
@@ -58,13 +56,20 @@ class CoinPriceAlcor(CoinPrice):
             for item in resp['result']:
                 for coin in val_coins:
                     if item['id'] == coin.siteid:
-                        prices.append(CoinPriceData(
+                        coin.symbol = item['quote_token']['symbol']['name']
+                        coin_price_data = CoinPriceData(
                             date=datetime.now(),
                             coin=coin,
                             curr=item['base_token']['str'],
                             price=item['last_price'],
-                            volume=item['volume24']))
+                            volume=item['volume24'])
+                        coin_market_data = CoinMarketData(
+                            coin=coin,
+                            curr=item['base_token']['str'])
 
+                        prices.append(coin_price_data)
+                        self.markets[coin.siteid] = coin_market_data
+                        
         return prices
 
     def get_price_hist_marketchart(self, coindata: list[CoinData], date) -> list[CoinPriceData]:
@@ -83,14 +88,14 @@ class CoinPriceAlcor(CoinPrice):
         params['from'] = ts - 3600
         params['to'] = ts + 3600
 
-        prices = []
+        prices: list[CoinPriceData] = []
         i = 0
         for coin in coindata:
             i += 1
             self.show_progress(i, len(coindata))
 
             # get coin base
-            coin_base = ''  # curr from previous
+            coin_base = self.markets[coin.siteid].curr  # curr from previous
 
             url = config.ALCOR_URL.replace(
                 '?', coin.chain) + '/markets/{}/charts'.format(coin.siteid)
@@ -178,10 +183,6 @@ def __main__():
     current_date = datetime.now().strftime('%Y-%m-%d %H:%M')
     print('Current date:', current_date)
 
-    # init pandas displaying
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.float_format', '{:.6e}'.format)
-
     # init session
     cp = CoinPriceAlcor()
     if config.DB_TYPE == 'sqlite':
@@ -215,24 +216,16 @@ def __main__():
 
     print('* Current price of coins')
     price = cp.get_price_current(coin_data)
-    df = pd.json_normalize(data=[asdict(obj) for obj in price])
-    df.sort_values(by=['coin.name', 'curr'],
-                   key=lambda col: col.str.lower(), inplace=True)
-    print()
-    print(df)
-    cp.write_to_file(df, output_csv, output_xls,
+    cp.print_coinpricedata(price)
+    cp.write_to_file(price, output_csv, output_xls,
                      '_current_coins_%s' % (current_date))
     print()
 
     print('* History price of coins via market_chart')
     price = cp.get_price_hist_marketchart(coin_data, date)
-    df = pd.json_normalize(data=[asdict(obj) for obj in price])
-    df.sort_values(by=['coin.name', 'curr'],
-                   key=lambda col: col.str.lower(), inplace=True)
-    print()
-    print(df)
-    cp.write_to_file(df, output_csv, output_xls,
-                     '_hist_marketchart_%s' % (date))
+    cp.print_coinpricedata(price)
+    cp.write_to_file(price, output_csv, output_xls,
+                     '_current_coins_%s' % (current_date))
     print()
 
 

@@ -7,10 +7,13 @@ Base Class CoinPrice
 
 """
 from argparse import ArgumentParser
+from dataclasses import asdict
 import re
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
+import pandas as pd
 from pathlib import Path
+from CoinData import CoinPriceData
 
 import config
 import Db
@@ -68,7 +71,7 @@ class CoinPrice(ABC):
                         {key_lastupdated: self.convert_timestamp(ts, False)})
         return resp
 
-    def write_to_file(self, df, output_csv: str, output_xls: str, suffix: str):
+    def write_to_file(self, pricedata: list[CoinPriceData], output_csv: str, output_xls: str, suffix: str):
         """Write a dataframe to a csv file and/or excel file
 
         df = DataFrame to write to file
@@ -79,6 +82,8 @@ class CoinPrice(ABC):
         filename CSV file = config.OUTPUT_PATH+output_csv+suffix.csv
         filename XLS file = config.OUTPUT_PATH+output_xls+suffix.xlsx
         """
+        df = self._convert_pricedata_to_df(pricedata)
+
         suffix = re.sub(r'[:;,!@#$%^&*()]', '', suffix)
         outputpath = config.OUTPUT_PATH
         if outputpath != '':
@@ -96,6 +101,31 @@ class CoinPrice(ABC):
             df.to_excel(filepath)
             print('File written: %s' % (filepath))
 
+    def print_coinpricedata(self, pricedata: list[CoinPriceData]) -> None:
+        """Print price data to output
+
+        coindata = list of CoinPriceData
+        """
+        # init pandas displaying
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_columns', None)
+        pd.set_option('display.max_colwidth', 20)
+        pd.set_option('display.float_format', '{:.6e}'.format)
+
+        df = self._convert_pricedata_to_df(pricedata)
+        print(df)
+        print()
+
+    def _convert_pricedata_to_df(self, pricedata: list[CoinPriceData]) -> pd.DataFrame:
+        """Converts list of objects to a pandas DataFrame
+
+        json_normalize is used this way to flatten the coindata object inside the pricedata
+        """
+        df = pd.json_normalize(data=[asdict(obj) for obj in pricedata])
+        df.sort_values(by=['coin.name', 'curr'],
+                    key=lambda col: col.str.lower(), inplace=True)
+        return df
+        
 
 def add_standard_arguments(exchange: str = '') -> ArgumentParser:
     """Add default arguments

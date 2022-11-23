@@ -7,12 +7,10 @@ Collecting prices
 
 Coingecko
 """
-from dataclasses import asdict
 import math
 import re
 from datetime import datetime
 
-import pandas as pd
 from dateutil import parser
 
 import config
@@ -56,7 +54,7 @@ class CoinPriceCoingecko(CoinPrice):
         resp.pop('status_code')
 
         # create list of CoinPriceData from respone
-        coinprices = []
+        prices: list[CoinPriceData] = []
         for resp_key, resp_val in resp.items():
             for coin in coindata:
                 if resp_key == coin.siteid:
@@ -64,13 +62,13 @@ class CoinPriceCoingecko(CoinPrice):
                         resp_val['last_updated_at'])
                     for currency in currencies:
                         if currency in resp_val:
-                            coinprices.append(CoinPriceData(
+                            prices.append(CoinPriceData(
                                 date=date,
                                 coin=coin,
                                 curr=currency,
                                 price=resp_val[currency]))
 
-        return coinprices
+        return prices
 
     def get_price_current_token(self, chain, contracts, curr, **kwargs):
         """Get coingecko current price of a token
@@ -118,7 +116,7 @@ class CoinPriceCoingecko(CoinPrice):
         dt = parser.parse(date)
         date = dt.strftime('%d-%m-%Y_%H:%M')
 
-        coinprices = []
+        prices: list[CoinPriceData] = []
         i = 0
         for coin in coindata:
             i += 1
@@ -134,7 +132,7 @@ class CoinPriceCoingecko(CoinPrice):
             if resp['status_code'] == 'error':
                 # got no status from request, must be an error
                 for currency in currencies:
-                    coinprices.append(CoinPriceData(
+                    prices.append(CoinPriceData(
                         date=dt,
                         coin=coin,
                         curr=currency,
@@ -156,7 +154,7 @@ class CoinPriceCoingecko(CoinPrice):
                             error = ''
 
                     # add CoinPriceData
-                    coinprices.append(CoinPriceData(
+                    prices.append(CoinPriceData(
                         date=dt,
                         coin=coin,
                         curr=currency,
@@ -164,7 +162,7 @@ class CoinPriceCoingecko(CoinPrice):
                         volume=volume,
                         error=error))
 
-        return coinprices
+        return prices
 
     def get_price_hist_marketchart(self, coindata: list[CoinData], currencies: list[str], date: str, chain: str='none') -> list[CoinPriceData]:
         """Get coingecko history price of a coin or a token
@@ -190,7 +188,7 @@ class CoinPriceCoingecko(CoinPrice):
         if (chain is not None):
             chain = chain.lower()
 
-        coinprices = []
+        prices: list[CoinPriceData] = []
         i = 0
         for coin in coindata:
             i += 1
@@ -209,7 +207,7 @@ class CoinPriceCoingecko(CoinPrice):
 
                 if resp['status_code'] == 'error':
                     # got no status from request, must be an error
-                    coinprices.append(CoinPriceData(
+                    prices.append(CoinPriceData(
                         date=dt,
                         coin=coin,
                         curr=currency,
@@ -240,7 +238,7 @@ class CoinPriceCoingecko(CoinPrice):
                         volume = resp['total_volumes'][resp_price_index][1]
                         error = ''
                         
-                    coinprices.append(CoinPriceData(
+                    prices.append(CoinPriceData(
                         date=dt_resp,
                         coin=coin,
                         curr=currency,
@@ -248,7 +246,7 @@ class CoinPriceCoingecko(CoinPrice):
                         volume=volume,
                         error=error))
 
-        return coinprices
+        return prices
 
 
 def __main__():
@@ -267,10 +265,6 @@ def __main__():
     output_xls = args.output_xls
     current_date = datetime.now().strftime('%Y-%m-%d %H:%M')
     print('Current date:', current_date)
-
-    # init pandas displaying
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.float_format', '{:.6e}'.format)
 
     # init session
     cp = CoinPriceCoingecko()
@@ -307,35 +301,23 @@ def __main__():
 
     print('* Current price of coins')
     price = cp.get_price_current(coin_data, curr)
-    df = pd.json_normalize(data=[asdict(obj) for obj in price])
-    df.sort_values(by=['coin.name', 'curr'],
-                   key=lambda col: col.str.lower(), inplace=True)
-    print()
-    print(df)
-    cp.write_to_file(df, output_csv, output_xls,
+    cp.print_coinpricedata(price)
+    cp.write_to_file(price, output_csv, output_xls,
                      '_current_coins_%s' % (current_date))
     print()
 
     print('* History price of coins')
     price = cp.get_price_hist(coin_data, curr, date)
-    df = pd.json_normalize(data=[asdict(obj) for obj in price])
-    df.sort_values(by=['coin.name', 'curr'],
-                   key=lambda col: col.str.lower(), inplace=True)
-    print()
-    print(date)
-    print(df)
-    cp.write_to_file(df, output_csv, output_xls, '_hist_%s' % (date))
+    cp.print_coinpricedata(price)
+    cp.write_to_file(price, output_csv, output_xls,
+                     '_hist_%s' % (current_date))
     print()
 
     print('* History price of coins via market_chart')
     price = cp.get_price_hist_marketchart(coin_data, curr, date)
-    df = pd.json_normalize(data=[asdict(obj) for obj in price])
-    df.sort_values(by=['coin.name', 'curr'],
-                   key=lambda col: col.str.lower(), inplace=True)
-    print()
-    print(df)
-    cp.write_to_file(df, output_csv, output_xls,
-                     '_hist_marketchart_%s' % (date))
+    cp.print_coinpricedata(price)
+    cp.write_to_file(price, output_csv, output_xls,
+                     '_hist_marketchart_%s' % (current_date))
     print()
 
     # print('* Current price of token')
