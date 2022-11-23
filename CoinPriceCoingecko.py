@@ -103,7 +103,7 @@ class CoinPriceCoingecko(CoinPrice):
 
         return resp
 
-    def get_price_hist(self, coindata: list[CoinData], currencies: list[str], date) -> list[CoinPriceData]:
+    def get_price_hist(self, coindata: list[CoinData], currencies: list[str], date: str) -> list[CoinPriceData]:
         """Get coingecko history price
 
         one price per day, not suitable for tax in Netherlands on 31-12-20xx 23:00
@@ -139,18 +139,21 @@ class CoinPriceCoingecko(CoinPrice):
                         coin=coin,
                         curr=currency,
                         price=math.nan,
+                        volume=math.nan,
                         error=resp['error']))
             else:
                 for currency in currencies:
                     # default values when not found in response
                     price = math.nan
-                    volume = 0
+                    volume = math.nan
+                    error = 'no data found'
 
                     # get data from respones
                     if market_data_exist:
                         if currency in resp['market_data']['current_price']:
                             price=resp['market_data']['current_price'][currency]
                             volume=resp['market_data']['total_volume'][currency]
+                            error = ''
 
                     # add CoinPriceData
                     coinprices.append(CoinPriceData(
@@ -158,11 +161,12 @@ class CoinPriceCoingecko(CoinPrice):
                         coin=coin,
                         curr=currency,
                         price=price,
-                        volume=volume))
+                        volume=volume,
+                        error=error))
 
         return coinprices
 
-    def get_price_hist_marketchart(self, coindata: list[CoinData], currencies: list[str], date, chain: str='none') -> list[CoinPriceData]:
+    def get_price_hist_marketchart(self, coindata: list[CoinData], currencies: list[str], date: str, chain: str='none') -> list[CoinPriceData]:
         """Get coingecko history price of a coin or a token
 
         coins_contracts can be a list of strings or a single string
@@ -180,8 +184,8 @@ class CoinPriceCoingecko(CoinPrice):
 
         # make parameters
         params = {}
-        params['from'] = ts
-        params['to'] = ts+3600
+        params['from'] = ts-5*3600
+        params['to'] = ts+5*3600
 
         if (chain is not None):
             chain = chain.lower()
@@ -210,23 +214,39 @@ class CoinPriceCoingecko(CoinPrice):
                         coin=coin,
                         curr=currency,
                         price=math.nan,
+                        volume=math.nan,
                         error=resp['error']))
                 else:
                     dt_resp = dt
                     price = math.nan
-                    volume = 0
+                    volume = math.nan
+                    error = 'no data found'
                     resp_prices = resp['prices']
                     if (len(resp_prices) > 0):
-                        dt_resp = self.convert_timestamp_n(resp_prices[0][0], True)
-                        price = resp_prices[0][1]
-                        volume = resp['total_volumes'][0][1]
+
+                        # select price index nearest to given datetime
+                        time_diff = 10**20
+                        resp_price_index = 0
+                        index = 0
+                        for resp_price in resp_prices:
+                            if abs(resp_price[0] - ts*1000) < time_diff:
+                                time_diff = abs(resp_price[0] - ts*1000)
+                                resp_price_index = index
+                            index += 1
+                        
+                        # get selected data from response
+                        dt_resp = self.convert_timestamp_n(resp_prices[resp_price_index][0], True)
+                        price = resp_prices[resp_price_index][1]
+                        volume = resp['total_volumes'][resp_price_index][1]
+                        error = ''
                         
                     coinprices.append(CoinPriceData(
                         date=dt_resp,
                         coin=coin,
                         curr=currency,
                         price=price,
-                        volume=volume))
+                        volume=volume,
+                        error=error))
 
         return coinprices
 
