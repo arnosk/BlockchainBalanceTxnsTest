@@ -36,8 +36,9 @@ class CoinPriceAlcor(CoinPrice):
     def get_price_current(self, coindata: list[CoinData]) -> list[CoinPriceData]:
         """Get alcor current price
 
-        coins = list of market id and chain
-        **kwargs = extra arguments in url 
+        coindata = list of CoinData for market base and quote and chain
+
+        returns list of CoinPriceData
         """
         # make dict with coins list per chain (key)
         coin_srch: dict[str, list[CoinData]] = {}
@@ -74,8 +75,10 @@ class CoinPriceAlcor(CoinPrice):
     def get_price_hist_marketchart(self, coindata: list[CoinData], date) -> list[CoinPriceData]:
         """Get alcor history price of a coin via market chart data
 
-        coins = list of [chain, coinid] with assets or token contracts for market base
+        coindata = list of CoinData for market base and quote and chain
         date = historical date 
+
+        returns list of CoinPriceData
         """
         # convert date to unix timestamp
         dt = parser.parse(date)  # local time

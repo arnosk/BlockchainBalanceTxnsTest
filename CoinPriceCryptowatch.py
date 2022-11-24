@@ -45,15 +45,17 @@ class CoinPriceCryptowatch(CoinPrice):
     def get_markets(self, coindata: list[CoinData], currencies: list[str], strictness=0) -> list[CoinMarketData]:
         """Get cryptowatch markets for chosen coins
 
-        coins = one string or list of strings with assets for market base
-        curr = one string or list of strings with assets for market quote
-                'coin+curr' = pair of market
         strictness = strictly (0), loose (1) or very loose (2) search for base
                     0: strictly is base exactly equals currency
                     1: loose is base contains currency with 1 extra char in front and/or at the end
                     2: very loose is base contains currency
 
         NOT Doing this anymore: if coin does not exist as base, try as quote
+
+        coindata = list of CoinData for market base
+        curr = list of strings with assets for market quote
+
+        returns list of CoinMarketData
         """
         markets: list[CoinMarketData] = []
         for coin in coindata:
@@ -123,7 +125,9 @@ class CoinPriceCryptowatch(CoinPrice):
     def get_price_current(self, markets: list[CoinMarketData]) -> list[CoinPriceData]:
         """Get Cryptowatch current price
 
-        markets = all market pairs and exchange to get price
+        markets = list of CoinMarketData for market pair on an exchange
+
+        returns list of CoinPriceData
         """
         prices: list[CoinPriceData] = []
         i = 0
@@ -167,11 +171,10 @@ class CoinPriceCryptowatch(CoinPrice):
     def get_price_hist_marketchart(self, markets: list[CoinMarketData], date: str) -> list[CoinPriceData]:
         """Get coingecko history price of a coin or a token
 
-        coins_contracts can be a list of strings or a single string
-        If chain = 'none' or None search for a coins otherwise search for token contracts
-
-        markets = all market pairs and exchange to get price
+        markets = list of CoinMarketData for market pair on an exchange
         date = historical date 
+
+        returns list of CoinPriceData
         """
         # convert date to unix timestamp
         dt = parser.parse(date)  # local time
@@ -238,7 +241,7 @@ class CoinPriceCryptowatch(CoinPrice):
 
         Only the exchanges with the greatest volume for a market pair will stay
 
-        prices = all prices of market pairs and exchange with volume column
+        prices = list of CoinPriceData of market pairs and exchange with volume column
         max_markets_per_pair = maximum rows of the same pair on different exchanges
                             when 0, no filtering will be done and all markets are shown
         """

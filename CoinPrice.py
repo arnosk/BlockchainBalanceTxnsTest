@@ -74,7 +74,7 @@ class CoinPrice(ABC):
     def write_to_file(self, pricedata: list[CoinPriceData], output_csv: str, output_xls: str, suffix: str):
         """Write a dataframe to a csv file and/or excel file
 
-        df = DataFrame to write to file
+        coindata = list of CoinPriceData
         output_csv = base filename for csv output file
         output_xls = base filename for xlsx output file
         suffix = last part of filename
@@ -120,6 +120,10 @@ class CoinPrice(ABC):
         """Converts list of objects to a pandas DataFrame
 
         json_normalize is used this way to flatten the coindata object inside the pricedata
+
+        coindata = list of CoinPriceData
+
+        returns pandas DataFrame
         """
         df = pd.json_normalize(data=[asdict(obj) for obj in pricedata])
         df.sort_values(by=['coin.name', 'curr'],

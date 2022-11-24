@@ -33,8 +33,10 @@ class CoinPriceCoingecko(CoinPrice):
     def get_price_current(self, coindata: list[CoinData], currencies: list[str]) -> list[CoinPriceData]:
         """Get coingecko current price
 
-        coins = list of CoinData objects with assets for market base
-        curr = one string or list of strings with assets for market quote
+        coindata = list of CoinData for market base
+        curr = list of strings with assets for market quote
+
+        returns list of CoinPriceData
         """
         # convert list to comma-separated string
         coins = ','.join(coin.siteid for coin in coindata)
@@ -101,13 +103,11 @@ class CoinPriceCoingecko(CoinPrice):
     def get_price_hist(self, coindata: list[CoinData], currencies: list[str], date: str) -> list[CoinPriceData]:
         """Get coingecko history price
 
-        one price per day, not suitable for tax in Netherlands on 31-12-20xx 23:00
-        coins can be a list of strings or a single string
-        Thumbnail image is available
-
-        coins = one string or list of strings with assets for market base
-        curr = one string or list of strings with assets for market quote
+        coindata = list of CoinData for market base
+        curr = list of strings with assets for market quote
         date = historical date 
+
+        returns list of CoinPriceData
         """
         # set date in correct format for url call
         dt = parser.parse(date)
@@ -160,14 +160,14 @@ class CoinPriceCoingecko(CoinPrice):
     def get_price_hist_marketchart(self, coindata: list[CoinData], currencies: list[str], date: str, chain: str='none') -> list[CoinPriceData]:
         """Get coingecko history price of a coin or a token
 
-        coins_contracts can be a list of strings or a single string
         If chain = 'none' or None search for a coins otherwise search for token contracts
 
         chain = chain where contracts are or None for coins search
-        coins_contracts = one string or list of strings with assets or token contracts for market base
-        curr = one string or list of strings with assets for market quote
-    >>>           (if list only first currency will be used)
+        coindata = list of CoinData or token contracts for market base
+        curr = list of strings with assets for market quote
         date = historical date 
+
+        returns list of CoinPriceData
         """
         # convert date to unix timestamp
         dt = parser.parse(date)  # local time
