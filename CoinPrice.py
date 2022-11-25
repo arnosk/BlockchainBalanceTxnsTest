@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 import pandas as pd
 from pathlib import Path
-from CoinData import CoinPriceData
+from CoinData import CoinData, CoinPriceData
 
 import config
 import Db
@@ -26,6 +26,32 @@ class CoinPrice(ABC):
 
     def __init__(self) -> None:
         self.req = RequestHelper()
+    
+    @abstractmethod
+    def get_price_current(self, coindata: list[CoinData], currencies: list[str]) -> list[CoinPriceData]:
+        """Get current price
+
+        coindata = list of CoinData for market base
+        curr = list of strings with assets for market quote
+
+        returns list of CoinPriceData
+        """
+        pass
+
+    @abstractmethod
+    def get_price_hist_marketchart(self, coindata: list[CoinData], currencies: list[str], date: str, chain: str='none') -> list[CoinPriceData]:
+        """Get history price of a coin or a token
+
+        If chain = 'none' or None search for a coins otherwise search for token contracts
+
+        chain = chain where contracts are or None for coins search
+        coindata = list of CoinData or token contracts for market base
+        curr = list of strings with assets for market quote
+        date = historical date 
+
+        returns list of CoinPriceData
+        """
+        pass
 
     def show_progress(self, nr: int, total: int):
         """Show progress to standard output
