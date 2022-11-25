@@ -29,8 +29,11 @@ class CoinPriceCryptowatch(CoinPrice):
     """Class for retrieving price data of a set of coins on the cryptowatch website
     """
 
-    def __init__(self) -> None:
+    def __init__(self, strictness: int = 0) -> None:
         self.table_name = DbHelper.DbTableName.coinCryptowatch.name
+        self.markets: list[CoinMarketData] = []
+        self.coindataid: int = 0
+        self.strictness: int = strictness
         super().__init__()
 
         # Update header of request session with user API key
@@ -53,7 +56,7 @@ class CoinPriceCryptowatch(CoinPrice):
         NOT Doing this anymore: if coin does not exist as base, try as quote
 
         coindata = list of CoinData for market base
-        curr = list of strings with assets for market quote
+        currencies = list of strings with assets for market quote
 
         returns list of CoinMarketData
         """
@@ -122,19 +125,39 @@ class CoinPriceCryptowatch(CoinPrice):
 
         return markets
 
-    def get_price_current(self, markets: list[CoinMarketData]) -> list[CoinPriceData]:
+    def print_markets(self) -> None:
+        """Print cryptowatch markets
+        """
+        print()
+        if self.coindataid == 0:
+            print('No market data loaded\n')
+            return
+        print('* Available markets of coins')
+        resdf = pd.DataFrame(self.markets)
+        resdf_print = resdf.drop('route', axis=1)
+        print(resdf_print)
+        print()
+
+    def get_price_current(self, coindata: list[CoinData], currencies: list[str]) -> list[CoinPriceData]:
         """Get Cryptowatch current price
 
-        markets = list of CoinMarketData for market pair on an exchange
+        coindata = list of CoinData for market base
+        currencies = list of strings with assets for market quote
 
         returns list of CoinPriceData
         """
+        # check if markets are already loaded
+        if self.coindataid != id(coindata):
+            print('----------------loading market data--------------')
+            self.markets = self.get_markets(coindata, currencies, self.strictness)
+            self.coindataid = id(coindata)
+
         prices: list[CoinPriceData] = []
         i = 0
         current_date = datetime.now().strftime('%Y-%m-%d %H:%M')
-        for market in markets:
+        for market in self.markets:
             i += 1
-            self.show_progress(i, len(markets))
+            self.show_progress(i, len(self.markets))
 
             if market.error == '':
                 url_list = market.route + '/summary'
@@ -168,14 +191,21 @@ class CoinPriceCryptowatch(CoinPrice):
 
         return prices
 
-    def get_price_hist_marketchart(self, markets: list[CoinMarketData], date: str) -> list[CoinPriceData]:
+    def get_price_hist_marketchart(self, coindata: list[CoinData], currencies: list[str], date: str) -> list[CoinPriceData]:
         """Get coingecko history price of a coin or a token
 
-        markets = list of CoinMarketData for market pair on an exchange
+        coindata = list of CoinData for market base
+        currencies = list of strings with assets for market quote
         date = historical date 
 
         returns list of CoinPriceData
         """
+        # check if markets are already loaded
+        if self.coindataid != id(coindata):
+            print('----------------loading market data--------------')
+            self.markets = self.get_markets(coindata, currencies, self.strictness)
+            self.coindataid = id(coindata)
+
         # convert date to unix timestamp
         dt = parser.parse(date)  # local time
         # dt = dt.replace(tzinfo=tz.UTC) # set as UTC time
@@ -189,9 +219,9 @@ class CoinPriceCryptowatch(CoinPrice):
 
         prices: list[CoinPriceData] = []
         i = 0
-        for market in markets:
+        for market in self.markets:
             i += 1
-            self.show_progress(i, len(markets))
+            self.show_progress(i, len(self.markets))
 
             if market.error == '':
                 url_list = market.route + '/ohlc'
@@ -299,7 +329,7 @@ def __main__():
     print('Current date:', current_date)
 
     # init session
-    cp = CoinPriceCryptowatch()
+    cp = CoinPriceCryptowatch(strictness = strictness)
     if config.DB_TYPE == 'sqlite':
         db = DbSqlite3(config.DB_CONFIG)
     elif config.DB_TYPE == 'postgresql':
@@ -328,16 +358,8 @@ def __main__():
 
     curr = ['usd', 'eur', 'btc', 'eth']
 
-    print()
-    print('* Available markets of coins')
-    markets = cp.get_markets(coin_data, curr, strictness)
-    resdf = pd.DataFrame(markets)
-    resdf_print = resdf.drop('route', axis=1)
-    print(resdf_print)
-    print()
-
     print('* Current price of coins')
-    price = cp.get_price_current(markets)
+    price = cp.get_price_current(coin_data, curr)
     price = cp.filter_marketpair_on_volume(price, max_markets_per_pair)
     cp.print_coinpricedata(price)
     cp.write_to_file(price, output_csv, output_xls,
@@ -345,13 +367,12 @@ def __main__():
     print()
 
     print('* History price of coins via market_chart')
-    price = cp.get_price_hist_marketchart(markets, date)
+    price = cp.get_price_hist_marketchart(coin_data, curr, date)
     price = cp.filter_marketpair_on_volume(price, max_markets_per_pair)
     cp.print_coinpricedata(price)
     cp.write_to_file(price, output_csv, output_xls,
                      '_hist_marketchart_%s' % (current_date))
     print()
-
 
 if __name__ == '__main__':
     __main__()

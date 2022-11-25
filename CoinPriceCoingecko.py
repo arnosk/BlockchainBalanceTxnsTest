@@ -69,7 +69,7 @@ class CoinPriceCoingecko(CoinPrice):
 
         return prices
 
-    def get_price_current_token(self, chain, contracts, curr, **kwargs):
+    def get_price_current_token(self, chain, contracts, curr):
         """Get coingecko current price of a token
 
         chain = chain where contracts are
@@ -84,12 +84,13 @@ class CoinPriceCoingecko(CoinPrice):
             curr = ','.join(curr)
 
         # make parameters
-        kwargs['contract_addresses'] = contracts
-        kwargs['vs_currencies'] = curr
-        kwargs['include_last_updated_at'] = True
+        params = {}
+        params['contract_addresses'] = contracts
+        params['vs_currencies'] = curr
+        params['include_last_updated_at'] = True
 
         url = '{}/simple/token_price/{}'.format(config.COINGECKO_URL, chain)
-        url = self.req.api_url_params(url, kwargs)
+        url = self.req.api_url_params(url, params)
         resp = self.req.get_request_response(url)
 
         # remove status_code from dictionary
