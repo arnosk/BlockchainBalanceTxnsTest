@@ -40,35 +40,36 @@ class CoinPriceAlcor(CoinPrice):
 
         returns list of CoinPriceData
         """
-        # make dict with coins list per chain (key)
-        coin_srch: dict[str, list[CoinData]] = {}
+        # make dict per chain (key1) with a dict of coins per coinid (key2)
+        coin_srch: dict[str, dict[str, CoinData]] = {}
         for coin in coindata:
-            coin_srch.setdefault(coin.chain, []).append(coin)
+            coin_srch.setdefault(coin.chain, {}).update({coin.siteid:coin})
 
-        # get all market data per chain, and then search through that list for the id's
+        # get all market data for each chain from Alcor site
         prices: list[CoinPriceData] = []
         for key_chain, val_coins in coin_srch.items():
             url = config.ALCOR_URL.replace('?', key_chain) + '/markets'
             resp = self.req.get_request_response(url)
 
-            # search through result for coin in the list
+            # search through result for coin in the dict
             for item in resp['result']:
-                for coin in val_coins:
-                    if item['id'] == coin.siteid:
-                        coin.name = item['quote_token']['str']
-                        coin.symbol = item['quote_token']['symbol']['name']
-                        coin_price_data = CoinPriceData(
-                            date=datetime.now(),
-                            coin=coin,
-                            curr=item['base_token']['str'],
-                            price=item['last_price'],
-                            volume=item['volume24'])
-                        coin_market_data = CoinMarketData(
-                            coin=coin,
-                            curr=item['base_token']['str'])
+                if item['id'] in val_coins:
+                    coin = val_coins[item['id']]
+                    coin.name = item['quote_token']['str']
+                    coin.symbol = item['quote_token']['symbol']['name']
+                    coin_price_data = CoinPriceData(
+                        date=datetime.now(),
+                        coin=coin,
+                        curr=item['base_token']['str'],
+                        price=item['last_price'],
+                        volume=item['volume24'])
+                    coin_market_data = CoinMarketData(
+                        coin=coin,
+                        curr=item['base_token']['str'])
 
-                        prices.append(coin_price_data)
-                        self.markets[coin.siteid] = coin_market_data
+                    prices.append(coin_price_data)
+                    self.markets[coin.siteid] = coin_market_data
+
                         
         return prices
 
