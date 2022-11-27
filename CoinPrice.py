@@ -101,7 +101,7 @@ class CoinPrice(ABC):
     def write_to_file(self, pricedata: list[CoinPriceData], output_csv: str, output_xls: str, suffix: str):
         """Write a dataframe to a csv file and/or excel file
 
-        coindata = list of CoinPriceData
+        pricedata = list of CoinPriceData
         output_csv = base filename for csv output file
         output_xls = base filename for xlsx output file
         suffix = last part of filename
@@ -109,6 +109,10 @@ class CoinPrice(ABC):
         filename CSV file = config.OUTPUT_PATH+output_csv+suffix.csv
         filename XLS file = config.OUTPUT_PATH+output_xls+suffix.xlsx
         """
+        if pricedata == []:
+            print('Empty pricedata list, nothing to save')
+            return
+
         df = self._convert_pricedata_to_df(pricedata)
 
         suffix = re.sub(r'[:;,!@#$%^&*()]', '', suffix)
@@ -131,8 +135,12 @@ class CoinPrice(ABC):
     def print_coinpricedata(self, pricedata: list[CoinPriceData]) -> None:
         """Print price data to output
 
-        coindata = list of CoinPriceData
+        pricedata = list of CoinPriceData
         """
+        if pricedata == []:
+            print('Empty pricedata list, nothing to print')
+            return
+
         # init pandas displaying
         pd.set_option('display.max_rows', None)
         pd.set_option('display.max_columns', None)
