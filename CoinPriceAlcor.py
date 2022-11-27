@@ -89,8 +89,8 @@ class CoinPriceAlcor(CoinPrice):
         # make parameters
         params = {}
         params['resolution'] = 60
-        params['from'] = ts - 3600
-        params['to'] = ts + 3600
+        params['from'] = ts
+        params['to'] = ts
 
         prices: list[CoinPriceData] = []
         i = 0
@@ -98,64 +98,8 @@ class CoinPriceAlcor(CoinPrice):
             i += 1
             self.show_progress(i, len(coindata))
 
-            # get coin base
-            coin_base = self.markets[coin.siteid].curr
-
-            url = config.ALCOR_URL.replace(
-                '?', coin.chain) + '/markets/{}/charts'.format(coin.siteid)
-            params_try = copy.deepcopy(params)
-            nr_try = 1
-
-            # try to get history data from and to specific date
-            # increase time range until data is found
-            while True:
-                url_try = self.req.api_url_params(url, params_try)
-                resp = self.req.get_request_response(url_try)
-
-                # check for correct res
-                if resp['status_code'] == 'error':
-                    # got no status from request, must be an error
-                    prices.append(CoinPriceData(
-                        date=dt,
-                        coin=coin,
-                        curr=coin_base,
-                        price=math.nan,
-                        volume=math.nan,
-                        error=resp['error']))
-                    break
-
-                else:
-                    resp_prices = resp['result']
-
-                    if len(resp_prices) > 0:
-                        # select result with timestamp nearest to desired date ts
-                        resp_price_minimal = self.search_price_minimal_timediff(resp_prices, ts, True)
-
-                        # record
-                        prices.append(CoinPriceData(
-                            date=self.convert_timestamp_n(resp_price_minimal['time'], True),
-                            coin=coin,
-                            curr=coin_base,
-                            price=resp_price_minimal['open'],
-                            volume=resp_price_minimal['volume']))
-                        break
-
-                    elif nr_try > self.nr_try_max:
-                        # if too many retries for date ranges, stop
-                        prices.append(CoinPriceData(
-                            date=dt,
-                            coin=coin,
-                            curr=coin_base,
-                            price=math.nan,
-                            volume=math.nan,
-                            error=resp['no data found']))
-                        break
-
-                    else:
-                        # retry same coin with new date range
-                        nr_try += 1
-                        params_try['from'] -= 2**(2*nr_try) * 3600
-                        params_try['to'] += 2**(2*nr_try) * 3600
+            coinprice = self.get_pricedata_hist_marketchart_retry(coin, dt, ts, params)
+            prices.append(coinprice)
 
         return prices
     
@@ -178,11 +122,55 @@ class CoinPriceAlcor(CoinPrice):
                 price_minimal = price
         return price_minimal
 
-    def try_url(self):
+    
+    def get_pricedata_hist_marketchart_retry(self, coin: CoinData, dt, ts, params) -> CoinPriceData:
+        """Get history price data for one coin from and to specific date
+        
+        with retry mechanism for bigger time range when no data is found
+        increase time range until data is found
+
+        coindata = list of CoinData for market base and quote and chain
+        date = historical date 
+
+        return CoinPriceData
         """
-        """
+        params_try = copy.deepcopy(params)
+        url = config.ALCOR_URL.replace(
+            '?', coin.chain) + '/markets/{}/charts'.format(coin.siteid)
+
+        date = dt
+        coin_base = self.markets[coin.siteid].curr
+        price = math.nan
+        volume = math.nan
+        error = 'data not found'
+
         for nr_try in range(1, self.nr_try_max):
-            print(nr_try)
+            # retry same coin with new date range
+            params_try['from'] -= 2**(2*nr_try) * 3600
+            params_try['to'] += 2**(2*nr_try) * 3600
+
+            url_try = self.req.api_url_params(url, params_try)
+            resp = self.req.get_request_response(url_try)
+
+            # check for correct response
+            if resp['status_code'] == 'error':
+                # got no status from request, must be an error
+                error = resp['error']
+                break
+            else:
+                resp_prices = resp['result']
+                if len(resp_prices) > 0:
+                    # select result with timestamp nearest to desired date ts
+                    resp_price_minimal = self.search_price_minimal_timediff(resp_prices, ts, True)
+
+                    # set found coin price data
+                    date = self.convert_timestamp_n(resp_price_minimal['time'], True)
+                    price = resp_price_minimal['open']
+                    volume = resp_price_minimal['volume']
+                    error = ''
+                    break
+        
+        return CoinPriceData(date=date, coin=coin, curr=coin_base, price=price, volume=volume, error=error)
 
 
 def __main__():
