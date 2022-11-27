@@ -7,6 +7,7 @@ Collecting prices
 
 From Cryptowatch
 """
+import copy
 import json
 import math
 import re
@@ -213,8 +214,8 @@ class CoinPriceCryptowatch(CoinPrice):
 
         # make parameters
         params = {}
-        params['after'] = ts - 3600
-        params['before'] = ts + 3600
+        params['after'] = ts
+        params['before'] = ts
         params['periods'] = 3600
 
         prices: list[CoinPriceData] = []
@@ -224,49 +225,9 @@ class CoinPriceCryptowatch(CoinPrice):
             self.show_progress(i, len(self.markets))
 
             if market.error == '':
-                url_list = market.route + '/ohlc'
-                url_list = self.req.api_url_params(url_list, params)
-                resp = self.req.get_request_response(url_list)
-                if resp['status_code'] == 'error':
-                    # got no status from request, must be an error
-                    prices.append(CoinPriceData(
-                        date=dt,
-                        coin=market.coin,
-                        curr=market.curr,
-                        exchange=market.exchange,
-                        price=math.nan,
-                        volume=math.nan,
-                        active=market.active,
-                        error=resp['error']))
-                else:
-                    resp_prices = resp['result']['3600']
-                    if len(resp_prices) > 0:
-                        
-                        # select price index nearest to given datetime
-                        resp_price_minimal = self.search_price_minimal_timediff(resp_prices, ts, False)
-                            
-                        prices.append(CoinPriceData(
-                            date=self.convert_timestamp_n(resp_price_minimal[0]),
-                            coin=market.coin,
-                            curr=market.curr,
-                            exchange=market.exchange,
-                            price=resp_price_minimal[1],  # open
-                            volume=resp_price_minimal[5],  # volume
-                            active=market.active))
-                    else:
-                        prices.append(CoinPriceData(
-                            date=dt,
-                            coin=market.coin,
-                            curr=market.curr,
-                            exchange=market.exchange,
-                            price=math.nan,
-                            volume=math.nan,
-                            active=market.active,
-                            error='no data found'))
-
-                if 'allowance' in resp:
-                    allowance = resp['allowance']
-                    self.show_allowance(allowance)
+                coinprice = self.get_pricedata_hist_marketchart_retry(
+                    market, dt, ts, params)
+                prices.append(coinprice)
 
         return prices
 
@@ -288,6 +249,63 @@ class CoinPriceCryptowatch(CoinPrice):
                 timediff_minimal = timediff
                 price_minimal = price
         return price_minimal
+
+    def get_pricedata_hist_marketchart_retry(self, market: CoinMarketData, dt, ts, params) -> CoinPriceData:
+        """Get history price data for one coin from and to specific date
+
+        with retry mechanism for bigger time range when no data is found
+        increase time range until data is found
+
+        market = Market data to search for price
+        date = historical date 
+
+        return CoinPriceData
+        """
+        params_try = copy.deepcopy(params)
+        url = market.route + '/ohlc'
+            
+        date = dt
+        coin = market.coin
+        curr = market.curr
+        exchange = market.exchange
+        price = math.nan
+        volume = math.nan
+        active = market.active
+        error = 'no data found'
+
+        for nr_try in range(1, self.nr_try_max):
+            # retry same coin with new date range
+            params_try['after'] -= 2**(2*nr_try) * 3600
+            params_try['before'] += 2**(2*nr_try) * 3600
+
+            url_try = self.req.api_url_params(url, params_try)
+            resp = self.req.get_request_response(url_try)
+
+            # check for correct response
+            if resp['status_code'] == 'error':
+                # got no status from request, must be an error
+                error = resp['error']
+                break
+            else:
+                resp_prices = resp['result']['3600']
+                if len(resp_prices) > 0:
+                    # select result with timestamp nearest to desired date ts
+                    resp_price_minimal = self.search_price_minimal_timediff(
+                        resp_prices, ts, False)
+
+                    # set found coin price data
+                    date = self.convert_timestamp_n(
+                        resp_price_minimal[0], False)
+                    price=resp_price_minimal[1]  # open
+                    volume=resp_price_minimal[5]  # volume
+                    error = ''
+                    break
+
+            if 'allowance' in resp:
+                allowance = resp['allowance']
+                self.show_allowance(allowance)
+
+        return CoinPriceData(date=date, coin=coin, curr=curr, exchange=exchange, price=price, volume=volume, active=active, error=error)
 
     def filter_marketpair_on_volume(self, prices: list[CoinPriceData], max_markets_per_pair: int) -> list[CoinPriceData]:
         """Filter the price data with same market pair. 

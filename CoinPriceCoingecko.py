@@ -7,6 +7,7 @@ Collecting prices
 
 Coingecko
 """
+import copy
 import math
 import re
 from datetime import datetime
@@ -176,8 +177,8 @@ class CoinPriceCoingecko(CoinPrice):
 
         # make parameters
         params = {}
-        params['from'] = ts - 5*3600
-        params['to'] = ts + 5*3600
+        params['from'] = ts
+        params['to'] = ts
 
         if (chain is not None):
             chain = chain.lower()
@@ -190,48 +191,10 @@ class CoinPriceCoingecko(CoinPrice):
 
             for currency in currencies:
                 params['vs_currency'] = currency
-                if (chain == '' or chain == 'none' or chain is None):
-                    url = '{}/coins/{}/market_chart/range'.format(
-                        config.COINGECKO_URL, coin.siteid)
-                else:
-                    url = '{}/coins/{}/contract/{}/market_chart/range'.format(
-                        config.COINGECKO_URL, chain, coin.siteid)
-                url = self.req.api_url_params(url, params)
-                resp = self.req.get_request_response(url)
 
-                if resp['status_code'] == 'error':
-                    # got no status from request, must be an error
-                    prices.append(CoinPriceData(
-                        date=dt,
-                        coin=coin,
-                        curr=currency,
-                        price=math.nan,
-                        volume=math.nan,
-                        error=resp['error']))
-                else:
-                    dt_resp = dt
-                    price = math.nan
-                    volume = math.nan
-                    error = 'no data found'
-                    resp_prices = resp['prices']
-                    if (len(resp_prices) > 0):
-
-                        # select price index nearest to given datetime
-                        resp_price_index = self.search_price_minimal_timediff(resp_prices, ts, True)
-                        
-                        # get selected data from response
-                        dt_resp = self.convert_timestamp_n(resp_prices[resp_price_index][0], True)
-                        price = resp_prices[resp_price_index][1]
-                        volume = resp['total_volumes'][resp_price_index][1]
-                        error = ''
-                        
-                    prices.append(CoinPriceData(
-                        date=dt_resp,
-                        coin=coin,
-                        curr=currency,
-                        price=price,
-                        volume=volume,
-                        error=error))
+                coinprice = self.get_pricedata_hist_marketchart_retry(
+                    coin, dt, ts, params, currency, chain)
+                prices.append(coinprice)
 
         return prices
 
@@ -256,6 +219,60 @@ class CoinPriceCoingecko(CoinPrice):
             index += 1
         return price_index
 
+    def get_pricedata_hist_marketchart_retry(self, coin: CoinData, dt, ts, params, currency, chain: str='none') -> CoinPriceData:
+        """Get history price data for one coin from and to specific date
+
+        with retry mechanism for bigger time range when no data is found
+        increase time range until data is found
+
+        coindata = CoinData for market base and quote and chain
+        date = historical date 
+
+        return CoinPriceData
+        """
+        params_try = copy.deepcopy(params)
+
+        if (chain == '' or chain == 'none' or chain is None):
+            url = '{}/coins/{}/market_chart/range'.format(
+                config.COINGECKO_URL, coin.siteid)
+        else:
+            url = '{}/coins/{}/contract/{}/market_chart/range'.format(
+                config.COINGECKO_URL, chain, coin.siteid)
+        
+        date = dt
+        price = math.nan
+        volume = math.nan
+        error = 'no data found'
+
+        for nr_try in range(1, self.nr_try_max):
+            # retry same coin with new date range
+            params_try['from'] -= 2**(2*nr_try) * 3600
+            params_try['to'] += 2**(2*nr_try) * 3600
+
+            url_try = self.req.api_url_params(url, params_try)
+            resp = self.req.get_request_response(url_try)
+
+            # check for correct response
+            if resp['status_code'] == 'error':
+                # got no status from request, must be an error
+                error = resp['error']
+                break
+            else:
+                resp_prices = resp['prices']
+                if len(resp_prices) > 0:
+                    # select result with timestamp nearest to desired date ts
+                    resp_price_index = self.search_price_minimal_timediff(
+                        resp_prices, ts, True)
+
+                    # set found coin price data
+                    date = self.convert_timestamp_n(
+                        resp_prices[resp_price_index][0], True)
+                    price = resp_prices[resp_price_index][1]
+                    volume = resp['total_volumes'][resp_price_index][1]
+                    error = ''
+                    break
+
+        return CoinPriceData(date=date, coin=coin, curr=currency, price=price, volume=volume, error=error)
 
 def __main__():
     """Get Coingecko price history

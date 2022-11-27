@@ -31,7 +31,6 @@ class CoinPriceAlcor(CoinPrice):
     def __init__(self) -> None:
         self.table_name: str = DbHelper.DbTableName.coinAlcor.name
         self.markets: dict[str, CoinMarketData] = {}
-        self.nr_try_max: int = 10
         super().__init__()
 
     def get_price_current(self, coindata: list[CoinData]) -> list[CoinPriceData]:
@@ -71,7 +70,6 @@ class CoinPriceAlcor(CoinPrice):
                     prices.append(coin_price_data)
                     self.markets[coin.siteid] = coin_market_data
 
-                        
         return prices
 
     def get_price_hist_marketchart(self, coindata: list[CoinData], date) -> list[CoinPriceData]:
@@ -98,12 +96,13 @@ class CoinPriceAlcor(CoinPrice):
             i += 1
             self.show_progress(i, len(coindata))
 
-            coinprice = self.get_pricedata_hist_marketchart_retry(coin, dt, ts, params)
+            coinprice = self.get_pricedata_hist_marketchart_retry(
+                coin, dt, ts, params)
             prices.append(coinprice)
 
         return prices
-    
-    def search_price_minimal_timediff(self, prices, ts: int, ms: bool=False):
+
+    def search_price_minimal_timediff(self, prices, ts: int, ms: bool = False):
         """Search for record in price data with the smallest time difference
 
         prices = results from request with price data
@@ -114,7 +113,7 @@ class CoinPriceAlcor(CoinPrice):
         """
         timediff_minimal = 10**20
         price_minimal = {}
-        ts = ts*1000 if ms==True else ts
+        ts = ts*1000 if ms == True else ts
         for price in prices:
             timediff = abs(ts - price['time'])
             if timediff < timediff_minimal:
@@ -122,14 +121,13 @@ class CoinPriceAlcor(CoinPrice):
                 price_minimal = price
         return price_minimal
 
-    
     def get_pricedata_hist_marketchart_retry(self, coin: CoinData, dt, ts, params) -> CoinPriceData:
         """Get history price data for one coin from and to specific date
-        
+
         with retry mechanism for bigger time range when no data is found
         increase time range until data is found
 
-        coindata = list of CoinData for market base and quote and chain
+        coindata = CoinData for market base and quote and chain
         date = historical date 
 
         return CoinPriceData
@@ -142,7 +140,7 @@ class CoinPriceAlcor(CoinPrice):
         coin_base = self.markets[coin.siteid].curr
         price = math.nan
         volume = math.nan
-        error = 'data not found'
+        error = 'no data found'
 
         for nr_try in range(1, self.nr_try_max):
             # retry same coin with new date range
@@ -161,15 +159,17 @@ class CoinPriceAlcor(CoinPrice):
                 resp_prices = resp['result']
                 if len(resp_prices) > 0:
                     # select result with timestamp nearest to desired date ts
-                    resp_price_minimal = self.search_price_minimal_timediff(resp_prices, ts, True)
+                    resp_price_minimal = self.search_price_minimal_timediff(
+                        resp_prices, ts, True)
 
                     # set found coin price data
-                    date = self.convert_timestamp_n(resp_price_minimal['time'], True)
+                    date = self.convert_timestamp_n(
+                        resp_price_minimal['time'], True)
                     price = resp_price_minimal['open']
                     volume = resp_price_minimal['volume']
                     error = ''
                     break
-        
+
         return CoinPriceData(date=date, coin=coin, curr=coin_base, price=price, volume=volume, error=error)
 
 

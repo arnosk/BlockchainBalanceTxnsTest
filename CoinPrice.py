@@ -26,6 +26,7 @@ class CoinPrice(ABC):
 
     def __init__(self) -> None:
         self.req = RequestHelper()
+        self.nr_try_max: int = 10
     
     @abstractmethod
     def get_price_current(self, coindata: list[CoinData], currencies: list[str]) -> list[CoinPriceData]:
