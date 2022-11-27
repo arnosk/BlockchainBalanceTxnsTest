@@ -213,8 +213,8 @@ class CoinPriceCryptowatch(CoinPrice):
 
         # make parameters
         params = {}
-        params['after'] = ts
-        params['before'] = ts
+        params['after'] = ts - 3600
+        params['before'] = ts + 3600
         params['periods'] = 3600
 
         prices: list[CoinPriceData] = []
@@ -239,15 +239,19 @@ class CoinPriceCryptowatch(CoinPrice):
                         active=market.active,
                         error=resp['error']))
                 else:
-                    if len(resp['result']['3600']) > 0:
+                    resp_prices = resp['result']['3600']
+                    if len(resp_prices) > 0:
+                        
+                        # select price index nearest to given datetime
+                        resp_price_minimal = self.search_price_minimal_timediff(resp_prices, ts, False)
+                            
                         prices.append(CoinPriceData(
-                            date=self.convert_timestamp_n(
-                                resp['result']['3600'][0][0]),
+                            date=self.convert_timestamp_n(resp_price_minimal[0]),
                             coin=market.coin,
                             curr=market.curr,
                             exchange=market.exchange,
-                            price=resp['result']['3600'][0][1],  # open
-                            volume=resp['result']['3600'][0][5],  # volume
+                            price=resp_price_minimal[1],  # open
+                            volume=resp_price_minimal[5],  # volume
                             active=market.active))
                     else:
                         prices.append(CoinPriceData(
@@ -265,6 +269,25 @@ class CoinPriceCryptowatch(CoinPrice):
                     self.show_allowance(allowance)
 
         return prices
+
+    def search_price_minimal_timediff(self, prices, ts: int, ms: bool=False):
+        """Search for record in price data with the smallest time difference
+
+        prices = results from request with price data
+        ts = timestamp in sec if ms = False
+        ts = timestamp in msec if ms = True
+
+        result = record with smallest time difference with ts
+        """
+        timediff_minimal = 10**20
+        price_minimal = []
+        ts = ts*1000 if ms==True else ts
+        for price in prices:
+            timediff = abs(ts - price[0])
+            if timediff < timediff_minimal:
+                timediff_minimal = timediff
+                price_minimal = price
+        return price_minimal
 
     def filter_marketpair_on_volume(self, prices: list[CoinPriceData], max_markets_per_pair: int) -> list[CoinPriceData]:
         """Filter the price data with same market pair. 

@@ -29,8 +29,9 @@ class CoinPriceAlcor(CoinPrice):
     """
 
     def __init__(self) -> None:
-        self.table_name = DbHelper.DbTableName.coinAlcor.name
+        self.table_name: str = DbHelper.DbTableName.coinAlcor.name
         self.markets: dict[str, CoinMarketData] = {}
+        self.nr_try_max: int = 10
         super().__init__()
 
     def get_price_current(self, coindata: list[CoinData]) -> list[CoinPriceData]:
@@ -43,7 +44,7 @@ class CoinPriceAlcor(CoinPrice):
         # make dict per chain (key1) with a dict of coins per coinid (key2)
         coin_srch: dict[str, dict[str, CoinData]] = {}
         for coin in coindata:
-            coin_srch.setdefault(coin.chain, {}).update({coin.siteid:coin})
+            coin_srch.setdefault(coin.chain, {}).update({coin.siteid: coin})
 
         # get all market data for each chain from Alcor site
         prices: list[CoinPriceData] = []
@@ -98,7 +99,7 @@ class CoinPriceAlcor(CoinPrice):
             self.show_progress(i, len(coindata))
 
             # get coin base
-            coin_base = self.markets[coin.siteid].curr  # curr from previous
+            coin_base = self.markets[coin.siteid].curr
 
             url = config.ALCOR_URL.replace(
                 '?', coin.chain) + '/markets/{}/charts'.format(coin.siteid)
@@ -124,29 +125,22 @@ class CoinPriceAlcor(CoinPrice):
                     break
 
                 else:
-                    res = resp['result']
+                    resp_prices = resp['result']
 
-                    if len(res) > 0:
+                    if len(resp_prices) > 0:
                         # select result with timestamp nearest to desired date ts
-                        res_minimal = {}
-                        timediff_minimal = 10**20
-                        for res in res:
-                            timediff = abs(ts*1000 - res['time'])
-                            if timediff < timediff_minimal:
-                                # remember record
-                                res_minimal = res
-                                timediff_minimal = timediff
+                        resp_price_minimal = self.search_price_minimal_timediff(resp_prices, ts, True)
 
                         # record
                         prices.append(CoinPriceData(
-                            date=self.convert_timestamp_n(res_minimal['time'], True),
+                            date=self.convert_timestamp_n(resp_price_minimal['time'], True),
                             coin=coin,
                             curr=coin_base,
-                            price=res_minimal['open'],
-                            volume=res_minimal['volume']))
+                            price=resp_price_minimal['open'],
+                            volume=resp_price_minimal['volume']))
                         break
 
-                    elif nr_try > 10:
+                    elif nr_try > self.nr_try_max:
                         # if too many retries for date ranges, stop
                         prices.append(CoinPriceData(
                             date=dt,
@@ -164,6 +158,31 @@ class CoinPriceAlcor(CoinPrice):
                         params_try['to'] += 2**(2*nr_try) * 3600
 
         return prices
+    
+    def search_price_minimal_timediff(self, prices, ts: int, ms: bool=False):
+        """Search for record in price data with the smallest time difference
+
+        prices = results from request with price data
+        ts = timestamp in sec if ms = False
+        ts = timestamp in msec if ms = True
+
+        result = record with smallest time difference with ts
+        """
+        timediff_minimal = 10**20
+        price_minimal = {}
+        ts = ts*1000 if ms==True else ts
+        for price in prices:
+            timediff = abs(ts - price['time'])
+            if timediff < timediff_minimal:
+                timediff_minimal = timediff
+                price_minimal = price
+        return price_minimal
+
+    def try_url(self):
+        """
+        """
+        for nr_try in range(1, self.nr_try_max):
+            print(nr_try)
 
 
 def __main__():

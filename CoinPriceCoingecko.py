@@ -176,8 +176,8 @@ class CoinPriceCoingecko(CoinPrice):
 
         # make parameters
         params = {}
-        params['from'] = ts-5*3600
-        params['to'] = ts+5*3600
+        params['from'] = ts - 5*3600
+        params['to'] = ts + 5*3600
 
         if (chain is not None):
             chain = chain.lower()
@@ -217,14 +217,7 @@ class CoinPriceCoingecko(CoinPrice):
                     if (len(resp_prices) > 0):
 
                         # select price index nearest to given datetime
-                        time_diff = 10**20
-                        resp_price_index = 0
-                        index = 0
-                        for resp_price in resp_prices:
-                            if abs(resp_price[0] - ts*1000) < time_diff:
-                                time_diff = abs(resp_price[0] - ts*1000)
-                                resp_price_index = index
-                            index += 1
+                        resp_price_index = self.search_price_minimal_timediff(resp_prices, ts, True)
                         
                         # get selected data from response
                         dt_resp = self.convert_timestamp_n(resp_prices[resp_price_index][0], True)
@@ -241,6 +234,27 @@ class CoinPriceCoingecko(CoinPrice):
                         error=error))
 
         return prices
+
+    def search_price_minimal_timediff(self, prices, ts: int, ms: bool=False) -> int:
+        """Search for record in price data with the smallest time difference
+
+        prices = results from request with price data
+        ts = timestamp in sec if ms = False
+        ts = timestamp in msec if ms = True
+
+        result = index of record with smallest time difference with ts
+        """
+        timediff_minimal = 10**20
+        price_index = 0
+        index = 0
+        ts = ts*1000 if ms==True else ts
+        for price in prices:
+            timediff = abs(ts - price[0])
+            if timediff < timediff_minimal:
+                timediff_minimal = timediff
+                price_index = index
+            index += 1
+        return price_index
 
 
 def __main__():
