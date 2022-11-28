@@ -144,8 +144,8 @@ class CoinPriceCoingecko(CoinPrice):
                     # get data from respones
                     if 'market_data' in resp:
                         if currency in resp['market_data']['current_price']:
-                            price=resp['market_data']['current_price'][currency]
-                            volume=resp['market_data']['total_volume'][currency]
+                            price = resp['market_data']['current_price'][currency]
+                            volume = resp['market_data']['total_volume'][currency]
                             error = ''
 
                     # add CoinPriceData
@@ -159,7 +159,7 @@ class CoinPriceCoingecko(CoinPrice):
 
         return prices
 
-    def get_price_hist_marketchart(self, coindata: list[CoinData], currencies: list[str], date: str, chain: str='none') -> list[CoinPriceData]:
+    def get_price_hist_marketchart(self, coindata: list[CoinData], currencies: list[str], date: str, chain: str = 'none') -> list[CoinPriceData]:
         """Get coingecko history price of a coin or a token
 
         If chain = 'none' or None search for a coins otherwise search for token contracts
@@ -198,7 +198,7 @@ class CoinPriceCoingecko(CoinPrice):
 
         return prices
 
-    def search_price_minimal_timediff(self, prices, ts: int, ms: bool=False) -> int:
+    def search_price_minimal_timediff(self, prices, ts: int, ms: bool = False) -> int:
         """Search for record in price data with the smallest time difference
 
         prices = results from request with price data
@@ -210,7 +210,7 @@ class CoinPriceCoingecko(CoinPrice):
         timediff_minimal = 10**20
         price_index = 0
         index = 0
-        ts = ts*1000 if ms==True else ts
+        ts = ts*1000 if ms == True else ts
         for price in prices:
             timediff = abs(ts - price[0])
             if timediff < timediff_minimal:
@@ -219,7 +219,7 @@ class CoinPriceCoingecko(CoinPrice):
             index += 1
         return price_index
 
-    def get_pricedata_hist_marketchart_retry(self, coin: CoinData, dt, ts, params, currency, chain: str='none') -> CoinPriceData:
+    def get_pricedata_hist_marketchart_retry(self, coin: CoinData, dt, ts, params, currency, chain: str = 'none') -> CoinPriceData:
         """Get history price data for one coin from and to specific date
 
         with retry mechanism for bigger time range when no data is found
@@ -238,7 +238,7 @@ class CoinPriceCoingecko(CoinPrice):
         else:
             url = '{}/coins/{}/contract/{}/market_chart/range'.format(
                 config.COINGECKO_URL, chain, coin.siteid)
-        
+
         date = dt
         price = math.nan
         volume = math.nan
@@ -273,6 +273,7 @@ class CoinPriceCoingecko(CoinPrice):
                     break
 
         return CoinPriceData(date=date, coin=coin, curr=currency, price=price, volume=volume, error=error)
+
 
 def __main__():
     """Get Coingecko price history

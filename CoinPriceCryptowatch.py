@@ -15,11 +15,11 @@ from datetime import datetime
 
 import pandas as pd
 from dateutil import parser
-from CoinData import CoinData, CoinMarketData, CoinPriceData
 
 import CoinPrice
 import config
 import DbHelper
+from CoinData import CoinData, CoinMarketData, CoinPriceData
 from CoinPrice import CoinPrice, add_standard_arguments
 from Db import Db
 from DbPostgresql import DbPostgresql
@@ -150,7 +150,8 @@ class CoinPriceCryptowatch(CoinPrice):
         # check if markets are already loaded
         if self.coindataid != id(coindata):
             print('----------------loading market data--------------')
-            self.markets = self.get_markets(coindata, currencies, self.strictness)
+            self.markets = self.get_markets(
+                coindata, currencies, self.strictness)
             self.coindataid = id(coindata)
 
         prices: list[CoinPriceData] = []
@@ -204,7 +205,8 @@ class CoinPriceCryptowatch(CoinPrice):
         # check if markets are already loaded
         if self.coindataid != id(coindata):
             print('----------------loading market data--------------')
-            self.markets = self.get_markets(coindata, currencies, self.strictness)
+            self.markets = self.get_markets(
+                coindata, currencies, self.strictness)
             self.coindataid = id(coindata)
 
         # convert date to unix timestamp
@@ -231,7 +233,7 @@ class CoinPriceCryptowatch(CoinPrice):
 
         return prices
 
-    def search_price_minimal_timediff(self, prices, ts: int, ms: bool=False):
+    def search_price_minimal_timediff(self, prices, ts: int, ms: bool = False):
         """Search for record in price data with the smallest time difference
 
         prices = results from request with price data
@@ -242,7 +244,7 @@ class CoinPriceCryptowatch(CoinPrice):
         """
         timediff_minimal = 10**20
         price_minimal = []
-        ts = ts*1000 if ms==True else ts
+        ts = ts*1000 if ms == True else ts
         for price in prices:
             timediff = abs(ts - price[0])
             if timediff < timediff_minimal:
@@ -263,7 +265,7 @@ class CoinPriceCryptowatch(CoinPrice):
         """
         params_try = copy.deepcopy(params)
         url = market.route + '/ohlc'
-            
+
         date = dt
         coin = market.coin
         curr = market.curr
@@ -296,8 +298,8 @@ class CoinPriceCryptowatch(CoinPrice):
                     # set found coin price data
                     date = self.convert_timestamp_n(
                         resp_price_minimal[0], False)
-                    price=resp_price_minimal[1]  # open
-                    volume=resp_price_minimal[5]  # volume
+                    price = resp_price_minimal[1]  # open
+                    volume = resp_price_minimal[5]  # volume
                     error = ''
                     break
 
@@ -370,7 +372,7 @@ def __main__():
     print('Current date:', current_date)
 
     # init session
-    cp = CoinPriceCryptowatch(strictness = strictness)
+    cp = CoinPriceCryptowatch(strictness=strictness)
     if config.DB_TYPE == 'sqlite':
         db = DbSqlite3(config.DB_CONFIG)
     elif config.DB_TYPE == 'postgresql':
@@ -414,6 +416,7 @@ def __main__():
     cp.write_to_file(price, output_csv, output_xls,
                      '_hist_marketchart_%s' % (current_date))
     print()
+
 
 if __name__ == '__main__':
     __main__()

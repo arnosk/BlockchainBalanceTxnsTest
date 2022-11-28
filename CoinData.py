@@ -54,3 +54,11 @@ class CoinMarketData:
     error: str = ''
     route: str = ''
 
+@dataclass
+class CoinSearchData:
+    """Dataclass for showing search results of coin data
+    """
+    siteid: str
+    name: str = ''
+    symbol: str = ''
+    chain: str = '' #Optional[str] = ''
