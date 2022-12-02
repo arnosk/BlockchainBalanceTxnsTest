@@ -14,7 +14,6 @@ from datetime import datetime, timezone
 import pandas as pd
 from pathlib import Path
 from CoinData import CoinData, CoinPriceData
-from pandas.api.types import is_datetime64_any_dtype
 
 import config
 from RequestHelper import RequestHelper
