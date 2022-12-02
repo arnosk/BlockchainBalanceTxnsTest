@@ -235,7 +235,7 @@ def __main__():
     price = cp.get_price_hist_marketchart(coin_data, date)
     cp.print_coinpricedata(price)
     cp.write_to_file(price, output_csv, output_xls,
-                     '_current_coins_%s' % (current_date))
+                     '_hist_marketchart_%s' % (date))
     print()
 
 

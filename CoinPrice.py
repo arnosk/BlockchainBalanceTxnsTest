@@ -14,9 +14,9 @@ from datetime import datetime, timezone
 import pandas as pd
 from pathlib import Path
 from CoinData import CoinData, CoinPriceData
+from pandas.api.types import is_datetime64_any_dtype
 
 import config
-import Db
 from RequestHelper import RequestHelper
 
 
@@ -127,6 +127,8 @@ class CoinPrice(ABC):
             print('File written: %s' % (filepath))
 
         if output_xls is not None:
+            # remove timezone, because excel cannot handle this
+            df['date'] = remove_tz(df['date'])
             filepath = Path('%s%s%s.xlsx' % (outputpath, output_xls, suffix))
             filepath.parent.mkdir(parents=True, exist_ok=True)
             df.to_excel(filepath)
@@ -144,7 +146,7 @@ class CoinPrice(ABC):
         # init pandas displaying
         pd.set_option('display.max_rows', None)
         pd.set_option('display.max_columns', None)
-        pd.set_option('display.max_colwidth', 20)
+        pd.set_option('display.max_colwidth', 25)
         pd.set_option('display.float_format', '{:.6e}'.format)
 
         df = self._convert_pricedata_to_df(pricedata)
@@ -165,7 +167,15 @@ class CoinPrice(ABC):
                     key=lambda col: col.str.lower(), inplace=True)
         return df
         
+def remove_tz(serie: pd.Series) -> pd.Series:
+    """Remove timezone in panda column
 
+    serie = pandas Series of type datetime 
+
+    returns pandas Series of type datetime
+    """
+    return serie.apply(lambda d: d if d.tzinfo is None or d.tzinfo.utcoffset(d) is None else pd.to_datetime(d).tz_localize(None))
+    
 def add_standard_arguments(exchange: str = '') -> ArgumentParser:
     """Add default arguments
 

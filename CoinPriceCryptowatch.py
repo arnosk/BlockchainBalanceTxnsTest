@@ -414,7 +414,7 @@ def __main__():
     price = cp.filter_marketpair_on_volume(price, max_markets_per_pair)
     cp.print_coinpricedata(price)
     cp.write_to_file(price, output_csv, output_xls,
-                     '_hist_marketchart_%s' % (current_date))
+                     '_hist_marketchart_%s' % (date))
     print()
 
 

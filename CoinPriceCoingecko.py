@@ -336,14 +336,14 @@ def __main__():
     price = cp.get_price_hist(coin_data, curr, date)
     cp.print_coinpricedata(price)
     cp.write_to_file(price, output_csv, output_xls,
-                     '_hist_%s' % (current_date))
+                     '_hist_%s' % (date))
     print()
 
     print('* History price of coins via market_chart')
     price = cp.get_price_hist_marketchart(coin_data, curr, date)
     cp.print_coinpricedata(price)
     cp.write_to_file(price, output_csv, output_xls,
-                     '_hist_marketchart_%s' % (current_date))
+                     '_hist_marketchart_%s' % (date))
     print()
 
     # print('* Current price of token')
