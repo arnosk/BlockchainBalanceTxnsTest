@@ -11,6 +11,7 @@ import re
 
 import config
 import DbHelper
+from CoinData import CoinData, CoinSearchData
 from CoinSearch import CoinSearch
 from Db import Db
 from DbPostgresql import DbPostgresql
@@ -25,33 +26,26 @@ class CoinSearchCryptowatch(CoinSearch):
         self.table_name = DbHelper.DbTableName.coinCryptowatch.name
         super().__init__()
 
-        # Update header of request session with user API key 
+        # Update header of request session with user API key
         self.req.update_header({'X-CW-API-Key': config.CRYPTOWATCH_API})
 
-    def insert_coin(self, db: Db, params: dict) -> int:
+    def insert_coin(self, db: Db, coin: CoinSearchData) -> int:
         """Insert a new coin to the coins table
 
         db = instance of Db
-        params = dictionary with retrieved coin info from Cryptowatch
-                {'id': 62,
-                'sid': 'dogecoin',
-                'symbol': 'doge',
-                'name': 'Dogecoin',
-                'fiat': False,
-                'route': 'https://api.cryptowat.ch/assets/doge'
-                }
+        coin = search data with retrieved coin info from web
         return value = rowcount or total changes 
         """
         query = 'INSERT INTO {} (siteid, name, symbol) ' \
                 'VALUES(?,?,?)'.format(self.table_name)
-        args = (params['sid'],
-                params['name'], 
-                params['symbol'])
+        args = (coin.coin.siteid,
+                coin.coin.name,
+                coin.coin.symbol)
         res = db.execute(query, args)
         db.commit()
         return res
 
-    def search_id_assets(self, search_str: str, assets: list) -> list:
+    def search_id_assets(self, search_str: str, assets: list) -> list[CoinSearchData]:
         """Search for coin in list of all assets
 
         search_str = string to search in assets
@@ -59,11 +53,37 @@ class CoinSearchCryptowatch(CoinSearch):
         return value = list with search results
         """
         s = search_str.lower()
-        res_coins = [item for item in assets
-                     if (re.match(s, item['sid'].lower()) or
-                         re.match(s, item['name'].lower()) or
-                         re.match(s, item['symbol'].lower()))]
-        return res_coins
+        resp_coins = [item for item in assets
+                      if (re.match(s, item['sid'].lower()) or
+                          re.match(s, item['name'].lower()) or
+                          re.match(s, item['symbol'].lower()))]
+        coinsearch = self.convert_to_coinsearchdata(resp_coins)
+        return coinsearch
+
+    def convert_to_coinsearchdata(self, resp: list) -> list[CoinSearchData]:
+        """Convert result from site to list of CoinSearchData
+
+        resp = list from the web
+        return value = list of CoinSearchData
+
+        example of resp['result']:
+                [	{		
+                    id:	182298
+                    sid:	zer0zer0,
+                    symbol:	0
+                    name:	zer0zer0,
+                    fiat:	false,
+                    route:	https://api.cryptowat.ch/assets/00
+                },		
+        """
+        coinsearch = []
+        for r in resp:
+            coindata = CoinData(siteid=r['sid'],
+                                name=r['name'],
+                                symbol=r['symbol'])
+            coinsearch.append(CoinSearchData(coin=coindata,
+                                             route=r['route']))
+        return coinsearch
 
     def get_search_id_db_query(self) -> str:
         """Query for searching coin in database
@@ -105,9 +125,9 @@ class CoinSearchCryptowatch(CoinSearch):
         user_input = self.input_number('Select correct coin to store in database, or (N)ew search, or (Q)uit: ',
                                        0, len(cs_result)-1)
 
-        # if coin is selected, add to database (replace or add new row in db?)
+        # if coin is selected, add to database when new
         # go back to search question / exit
-        self.handle_user_input(db, user_input, cs_result, 'sid', 'name')
+        self.handle_user_input(db, user_input, cs_result)
 
     def get_all_assets(self) -> list:
         '''Retrieve all assets from cryptowatch api

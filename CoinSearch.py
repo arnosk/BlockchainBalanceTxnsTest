@@ -9,12 +9,13 @@ Base Class CoinSearch
 import os
 import sys
 from abc import ABC, abstractmethod
+from dataclasses import asdict
 
 import cfscrape
 import pandas as pd
 
 import DbHelper
-from CoinData import CoinData
+from CoinData import CoinData, CoinSearchData
 from Db import Db
 from RequestHelper import RequestHelper
 
@@ -28,20 +29,14 @@ class CoinSearch(ABC):
         self.req = RequestHelper()
 
     @abstractmethod
-    def insert_coin(self, db: Db, params: dict) -> int:
+    def insert_coin(self, db: Db, coin: CoinSearchData) -> int:
         """Insert coin in database
 
         Insert a new coin to the coins table
         And download the thumb and large picture of the coin
 
         db = instance of Db
-        params = dictionary with retrieved coin info from exchange
-                {'id': 62,
-                'symbol': 'doge',
-                'name': 'Dogecoin',
-                'fiat': False,
-                'route': 'https://api.cryptowat.ch/assets/doge'
-                }
+        coin = search data with retrieved coin info from web
         """
         pass
 
@@ -73,10 +68,10 @@ class CoinSearch(ABC):
         """
         pass
 
-    def save_images(self, image_urls, coin_name: str):
+    def save_images(self, image_urls: dict, coin_name: str):
         """Save image files for one coin
 
-        image_urls = list if urls for images
+        image_urls = dict if urls for images
         coin_name = string with name of coin
         """
         pass
@@ -140,11 +135,14 @@ class CoinSearch(ABC):
         pd.set_option('display.float_format', '{:.6e}'.format)
 
         if (len(items) > 0):
-            itemsdf = pd.DataFrame(items)
+            df = pd.json_normalize(data=[asdict(obj) for obj in items])
+            #itemsdf = pd.DataFrame(items)
+            df = df.drop(
+                ['route', 'image_thumb', 'image_large'], axis=1, errors='ignore')
             if col_drop != []:
-                itemsdf = itemsdf.drop(col_drop, axis=1)
+                df = df.drop(col_drop, axis=1, errors='ignore')
             print('Search from', text)
-            print(itemsdf)
+            print(df)
         else:
             print('Coin not found from', text)
 
@@ -177,7 +175,7 @@ class CoinSearch(ABC):
                         continue
             return user_input
 
-    def handle_user_input(self, db: Db, user_input, search_result: list, coin_id_colname: str, coin_name_colname: str):
+    def handle_user_input(self, db: Db, user_input, coinsearch: list[CoinSearchData]):
         """Handle user input after selecting coin
 
         New search, skips the function
@@ -186,18 +184,16 @@ class CoinSearch(ABC):
 
         db = instance of Db
         user_input = char or integer with row number
-        search_results = result from search
-        coin_id_colname = string for column of the coin id in search results
-        coin_name_colname = string for column of the coin name in search results
+        coinsearch = result from search
         """
         if user_input == 'n':
             print('New search')
         elif user_input == 'q':
             sys.exit('Exiting')
         else:
-            coin = search_result[user_input]
-            coin_id = coin[coin_id_colname]
-            coin_name = coin[coin_name_colname]
+            coin = coinsearch[user_input]
+            coin_id = coin.coin.siteid
+            coin_name = coin.coin.name
 
             # check if coin name, symbol is already in our database
             if db.has_connection():
@@ -217,7 +213,9 @@ class CoinSearch(ABC):
                         print('%s added to the database' % (coin_name))
 
                         # safe coin images
-                        self.save_images(coin, coin_name)
+                        images_urls = {'thumb': coin.image_thumb,
+                                       'large': coin.image_large}
+                        self.save_images(images_urls, coin.coin.name)
                     else:
                         print('Error adding %s to database' % (coin_name))
             else:

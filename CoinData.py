@@ -65,7 +65,9 @@ class CoinSearchData:
     """
     coin: CoinData
     base: str = ''
-    market_cap_rank: int = -1
+    market_cap_rank: int = 0
     volume: float = 0
     change: float = 0
     route: str = ''
+    image_thumb: str = ''
+    image_large: str = ''

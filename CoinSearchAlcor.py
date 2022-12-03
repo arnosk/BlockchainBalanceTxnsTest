@@ -11,6 +11,7 @@ import re
 
 import config
 import DbHelper
+from CoinData import CoinData, CoinSearchData
 from CoinSearch import CoinSearch
 from Db import Db
 from DbPostgresql import DbPostgresql
@@ -25,53 +26,24 @@ class CoinSearchAlcor(CoinSearch):
         self.table_name = DbHelper.DbTableName.coinAlcor.name
         super().__init__()
 
-    def insert_coin(self, db: Db, params: dict) -> int:
+    def insert_coin(self, db: Db, coin: CoinSearchData) -> int:
         """Insert a new coin to the coins table
 
         db = instance of Db
-        params = dictionary with retrieved coin info from Alcor
+        coin = search data with retrieved coin info from web
         return value = rowcount or total changes 
         """
         query = 'INSERT INTO {} (siteid, base, quote, chain) ' \
                 'VALUES(?,?,?,?)'.format(self.table_name)
-        args = (params['id'],
-                params['base'],
-                params['quote'],
-                params['chain'])
+        args = (coin.coin.siteid,
+                coin.coin.base,
+                coin.coin.name,  # = quote
+                coin.coin.chain)
         res = db.execute(query, args)
         db.commit()
         return res
 
-    def simplify_coinitems(self, coins: list) -> list:
-        """Return a simpler structure of coin items
-
-        {'id': 157,
-        'base_token': {"symbol":{"name":"XUSDC","precision":6},"contract":"xtokens","str":"XUSDC@xtokens"},
-        'quote_token': {"symbol":{"name":"FREEOS","precision":4},"contract":"freeostokens","str":"FREEOS@freeostokens"},
-        'chain': 'proton',
-        'ticker_id': 'FREEOS-freeostokens_XUSDC-xtokens'
-        }
-
-        coins = list with result from web
-        return value = simplified list
-        """
-        result = []
-        for item in coins:
-            result.append(
-                {'quote': item['quote_token']['str'],  # item['quote_token']['symbol']['name']
-                 # item['base_token']['symbol']['name']
-                 'base': item['base_token']['str'],
-                 'chain': item['chain'],
-                 'volume24': item['volume24'],
-                 'volumeM': item['volumeMonth'],
-                 'id': item['id'],
-                 'ticker': item['ticker_id'] if 'ticker_id' in item else '-',
-                 'frozen': item['frozen']
-                 }
-            )
-        return result
-
-    def search_id_assets(self, search_str: str, assets) -> list:
+    def search_id_assets(self, search_str: str, assets) -> list[CoinSearchData]:
         """Search for coin in list of all assets
 
         search_str: str = string to search in assets
@@ -79,15 +51,45 @@ class CoinSearchAlcor(CoinSearch):
         return value = list with search results
         """
         s = search_str.lower()
-        res_coins = []
+        resp_coins = []
         for asset in assets.values():
-            res_coin = [item for item in asset
-                        if (re.match(s, item['base_token']['symbol']['name'].lower()) or
-                            re.search(s, item['base_token']['str'].lower()) or
-                            re.match(s, item['quote_token']['symbol']['name'].lower()) or
-                            re.search(s, item['quote_token']['str'].lower()))]
-            res_coins.extend(res_coin)
-        return res_coins
+            resp_coin = [item for item in asset
+                         if (re.match(s, item['base_token']['symbol']['name'].lower()) or
+                             re.search(s, item['base_token']['str'].lower()) or
+                             re.match(s, item['quote_token']['symbol']['name'].lower()) or
+                             re.search(s, item['quote_token']['str'].lower()))]
+            resp_coins.extend(resp_coin)
+        coinsearch = self.convert_to_coinsearchdata(resp_coins)
+        return coinsearch
+
+    def convert_to_coinsearchdata(self, resp: list) -> list[CoinSearchData]:
+        """Convert result from site to list of CoinSearchData
+
+        resp = list from the web
+        return value = list of CoinSearchData
+
+        {'id': 157,
+        'base_token': {"symbol":{"name":"XUSDC","precision":6},"contract":"xtokens","str":"XUSDC@xtokens"},
+        'quote_token': {"symbol":{"name":"FREEOS","precision":4},"contract":"freeostokens","str":"FREEOS@freeostokens"},
+        'chain': 'proton',
+        'ticker_id': 'FREEOS-freeostokens_XUSDC-xtokens',
+        'volume24': 0, 'volumeWeek': 0, 'volumeMonth': 0,
+        'change24': 0, 'changeWeek': 0,
+        'frozen': false
+        }
+        """
+        coinsearch = []
+        for r in resp:
+            coindata = CoinData(siteid=r['id'],
+                                name=r['quote_token']['str'],
+                                symbol=r['quote_token']['symbol']['name'],
+                                chain=r['chain'],
+                                base=r['base_token']['str'])
+            coinsearch.append(CoinSearchData(coin=coindata,
+                                             base=r['base_token']['symbol']['name'],
+                                             volume=r['volumeWeek'],
+                                             change=r['changeWeek']))
+        return coinsearch
 
     def get_search_id_db_query(self) -> str:
         """Query for searching coin in database
@@ -126,16 +128,15 @@ class CoinSearchAlcor(CoinSearch):
 
         # Do search on Alcor assets in memory
         cs_result = self.search_id_assets(coin_search, assets)
-        cs_result = self.simplify_coinitems(cs_result)
-        self.print_search_result(cs_result, 'Alcor', ['ticker', 'frozen'])
+        self.print_search_result(cs_result, 'Alcor')
 
         # ask user which row is the correct answer
         user_input = self.input_number('Select correct coin to store in database, or (N)ew search, or (Q)uit: ',
                                        0, len(cs_result)-1)
 
-        # if coin is selected, add to database (replace or add new row in db?)
+        # if coin is selected, add to database when new
         # go back to search question / exit
-        self.handle_user_input(db, user_input, cs_result, 'id', 'ticker')
+        self.handle_user_input(db, user_input, cs_result)
 
     def get_all_assets(self, chains: list) -> dict:
         '''Retrieve all assets from alcor api

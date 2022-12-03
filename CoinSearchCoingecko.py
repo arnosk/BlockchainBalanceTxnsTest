@@ -28,6 +28,7 @@ import argparse
 
 import config
 import DbHelper
+from CoinData import CoinData, CoinSearchData
 from CoinSearch import CoinSearch
 from Db import Db
 from DbPostgresql import DbPostgresql
@@ -42,35 +43,28 @@ class CoinSearchCoingecko(CoinSearch):
         self.table_name = DbHelper.DbTableName.coinCoingecko.name
         super().__init__()
 
-    def insert_coin(self, db: Db, params: dict) -> int:
+    def insert_coin(self, db: Db, coin: CoinSearchData) -> int:
         """Insert a new coin to the coins table
 
         And download the thumb and large picture of the coin
 
         db = instance of Db
-        params = dictionary with retrieved coin info from coingecko
-                {'id': 'dogecoin',
-                'name': 'Dogecoin',
-                'symbol': 'DOGE',
-                'market_cap_rank': 10,
-                'thumb': 'https://assets.coingecko.com/coins/images/5/thumb/dogecoin.png',
-                'large': 'https://assets.coingecko.com/coins/images/5/large/dogecoin.png'
-                }
+        coin = search data with retrieved coin info from web
         return value = rowcount or total changes 
         """
         query = 'INSERT INTO {} (siteid, name, symbol) ' \
                 'VALUES(?,?,?)'.format(self.table_name)
-        args = (params['id'],
-                params['name'],
-                params['symbol'])
+        args = (coin.coin.siteid,
+                coin.coin.name,
+                coin.coin.symbol)
         res = db.execute(query, args)
         db.commit()
         return res
 
-    def save_images(self, image_urls, coin_name: str):
+    def save_images(self, image_urls: dict, coin_name: str):
         """Save image files for one coin
 
-        image_urls = list if urls for images
+        image_urls = dict if urls for images
         coin_name = string with name of coin
         """
         if 'thumb' in image_urls:
@@ -108,7 +102,7 @@ class CoinSearchCoingecko(CoinSearch):
             # Save image files
             self.save_images(params_image, c)
 
-    def search_id_web(self, search_str: str) -> list:
+    def search_id_web(self, search_str: str) -> list[CoinSearchData]:
         """Search request to Coingecko
 
         search_str = string to search in assets
@@ -116,8 +110,36 @@ class CoinSearchCoingecko(CoinSearch):
         """
         url = '{}/search?query={}'.format(config.COINGECKO_URL, search_str)
         resp = self.req.get_request_response(url)
-        res_coins = resp['coins']
-        return res_coins
+        coinsearch = self.convert_to_coinsearchdata(resp['coins'])
+        return coinsearch
+
+    def convert_to_coinsearchdata(self, resp: list) -> list[CoinSearchData]:
+        """Convert result from site to list of CoinSearchData
+
+        resp = list from the web
+        return value = list of CoinSearchData
+
+        example of resp['coins']:
+            [	{		
+                    id:	bitcoin,
+                    name:	Bitcoin,
+                    api_symbol:	bitcoin,
+                    symbol:	BTC,
+                    market_cap_rank:	1
+                    thumb:	https://assets.coingecko.com/coins/images/1/thumb/bitcoin.png,
+                    large:	https://assets.coingecko.com/coins/images/1/large/bitcoin.png
+                },		
+        """
+        coinsearch = []
+        for r in resp:
+            coindata = CoinData(siteid=r['id'],
+                                name=r['name'],
+                                symbol=r['symbol'])
+            coinsearch.append(CoinSearchData(coin=coindata,
+                                             market_cap_rank=r['market_cap_rank'],
+                                             image_thumb=r['thumb'],
+                                             image_large=r['large'], ))
+        return coinsearch
 
     def get_search_id_db_query(self) -> str:
         """Query for searching coin in database
@@ -152,15 +174,15 @@ class CoinSearchCoingecko(CoinSearch):
 
         # Do search on coingecko
         cs_result = self.search_id_web(coin_search)
-        self.print_search_result(cs_result, 'CoinGecko', ['thumb', 'large'])
+        self.print_search_result(cs_result, 'CoinGecko')
 
         # ask user which row is the correct answer
         user_input = self.input_number('Select correct coin to store in database, or (N)ew search, or (Q)uit: ',
                                        0, len(cs_result)-1)
 
-        # if coin is selected, add to database (replace or add new row in db?)
+        # if coin is selected, add to database when new
         # go back to search question / exit
-        self.handle_user_input(db, user_input, cs_result, 'id', 'name')
+        self.handle_user_input(db, user_input, cs_result)
 
     def get_all_assets(self) -> list:
         """Get all assets from Coingecko
