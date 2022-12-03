@@ -8,13 +8,14 @@ Base Class CoinSearch
 """
 import os
 import sys
+from abc import ABC, abstractmethod
 
 import cfscrape
-from abc import ABC, abstractmethod
 import pandas as pd
 
-from Db import Db
 import DbHelper
+from CoinData import CoinData
+from Db import Db
 from RequestHelper import RequestHelper
 
 
@@ -103,14 +104,14 @@ class CoinSearch(ABC):
         with open(file, 'wb') as f:
             f.write(cfurl)
 
-    def search_id_db(self, db: Db, coin_search: str) -> list:
+    def search_id_db(self, db: Db, coin_search: str) -> list[CoinData]:
         """Search for coin in database
 
         db = database
         coin_search = coin name to be searched
         return value = list with search results
         """
-        db_result = []
+        coindata = []
         if db.check_table(self.table_name):
             coin_search_str = '%{}%'.format(coin_search)
             coin_search_query = self.get_search_id_db_query()
@@ -120,7 +121,10 @@ class CoinSearch(ABC):
             params = (coin_search_str,)*n
 
             db_result = db.query(coin_search_query, params)
-        return db_result
+            print(db_result)
+            print(type(db_result))
+            coindata = [CoinData(*x) for x in db_result]
+        return coindata
 
     def print_search_result(self, items: list, text: str, col_drop=[]):
         """Print search result to terminal
@@ -201,7 +205,7 @@ class CoinSearch(ABC):
                 if not db.check_table(self.table_name):
                     DbHelper.create_table(db, self.table_name)
 
-                db_result = db.query('SELECT * FROM {} WHERE siteid=?'.format(self.table_name), 
+                db_result = db.query('SELECT * FROM {} WHERE siteid=?'.format(self.table_name),
                                      (coin_id,))
                 if len(db_result):
                     print('Database already has a row with the coin %s' %

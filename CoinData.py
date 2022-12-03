@@ -6,8 +6,8 @@ Created on November 20, 2022
 Data Classes for Coin data
 
 """
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional
 
 
@@ -18,7 +18,8 @@ class CoinData:
     siteid: str
     name: str = ''
     symbol: str = ''
-    chain: str = '' #Optional[str] = ''
+    chain: str = ''
+    base: Optional[str] = ''  # only use in CoinSearchAlcor
 
     def __post_init__(self):
         """Set coin name when not given
@@ -33,14 +34,15 @@ class CoinData:
 class CoinPriceData:
     """Dataclass for coin price
     """
-    date: datetime # = field(default_factory=datetime.utcnow)
+    date: datetime  # = field(default_factory=datetime.utcnow)
     coin: CoinData
     curr: str = ''
-    exchange: str = '' # is in fact marketdata
+    exchange: str = ''  # is in fact marketdata
     price: float = 0
     volume: float = 0
     active: bool = True
     error: str = ''
+
 
 @dataclass
 class CoinMarketData:
@@ -54,11 +56,16 @@ class CoinMarketData:
     error: str = ''
     route: str = ''
 
+
 @dataclass
 class CoinSearchData:
     """Dataclass for showing search results of coin data
+
+    General class
     """
-    siteid: str
-    name: str = ''
-    symbol: str = ''
-    chain: str = '' #Optional[str] = ''
+    coin: CoinData
+    base: str = ''
+    market_cap_rank: int = -1
+    volume: float = 0
+    change: float = 0
+    route: str = ''

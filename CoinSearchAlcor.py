@@ -59,14 +59,15 @@ class CoinSearchAlcor(CoinSearch):
         for item in coins:
             result.append(
                 {'quote': item['quote_token']['str'],  # item['quote_token']['symbol']['name']
-                'base': item['base_token']['str'], # item['base_token']['symbol']['name']
-                'chain': item['chain'],
-                'volume24': item['volume24'],
-                'volumeM': item['volumeMonth'],
-                'id': item['id'],
-                'ticker': item['ticker_id'] if 'ticker_id' in item else '-',
-                'frozen': item['frozen']
-                }
+                 # item['base_token']['symbol']['name']
+                 'base': item['base_token']['str'],
+                 'chain': item['chain'],
+                 'volume24': item['volume24'],
+                 'volumeM': item['volumeMonth'],
+                 'id': item['id'],
+                 'ticker': item['ticker_id'] if 'ticker_id' in item else '-',
+                 'frozen': item['frozen']
+                 }
             )
         return result
 
@@ -94,9 +95,13 @@ class CoinSearchAlcor(CoinSearch):
         return value = query for database search with 
                        ? is used for the search item
         """
-        coin_search_query = '''SELECT * FROM {} WHERE
-                                base like ? or
-                                quote like ?
+        # Sqlite use INSTR, other databases use CHARINDEX('@',quote,0) ??
+        coin_search_query = '''SELECT siteid, quote, 
+                                    SUBSTRING(quote,0,INSTR(quote,'@')) AS symbol, 
+                                    chain, base 
+                                FROM {} WHERE
+                                    base like ? or
+                                    quote like ?
                             '''.format(self.table_name)
         return coin_search_query
 
@@ -136,7 +141,7 @@ class CoinSearchAlcor(CoinSearch):
         '''Retrieve all assets from alcor api
 
         chains = list of chains in alcor ecosystem
-        
+
         returns = dictionary where each key is a chain with a list of string with assets from Alcor
         '''
         coin_assets = {}

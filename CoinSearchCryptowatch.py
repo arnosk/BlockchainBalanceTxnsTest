@@ -71,7 +71,7 @@ class CoinSearchCryptowatch(CoinSearch):
         return value = query for database search with 
                        ? is used for the search item
         """
-        coin_search_query = '''SELECT * FROM {} WHERE
+        coin_search_query = '''SELECT siteid, name, symbol FROM {} WHERE
                                 siteid like ? or
                                 name like ? or
                                 symbol like ?
