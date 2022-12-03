@@ -261,8 +261,12 @@ def __main__():
                            help='Coin name to search on Coingecko')
     argparser.add_argument('-i', '--image', action='store_true',
                            help='Save image file for all coins in database')
+    argparser.add_argument('-w', '--searchweb', action='store_true',
+                           help='Search directly from CoinGecko website instead of first retrieving list of all assets')
     args = argparser.parse_args()
     coin_search = args.coin
+    download_all_images = args.image
+    searchweb = args.searchweb
 
     # init session
     cs = CoinSearchCoingecko()
@@ -276,11 +280,14 @@ def __main__():
     db.check_db()
     db_table_exist = db.check_table(cs.table_name)
 
-    # get all assets from cryptowatch
-    coin_assets = []
-    coin_assets = cs.get_all_assets()
+    if searchweb:
+        # search directly from coingecko
+        coin_assets = []
+    else:
+        # get all assets from coingecko
+        coin_assets = cs.get_all_assets()
 
-    if args.image:
+    if download_all_images:
         if db_table_exist:
             cs.download_images(db)
         else:
