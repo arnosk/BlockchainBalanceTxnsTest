@@ -25,6 +25,7 @@ the key coins has a list of the search result of coins
   'exchanges': [] ...
 """
 import argparse
+import re
 
 import config
 import DbHelper
@@ -102,6 +103,46 @@ class CoinSearchCoingecko(CoinSearch):
             # Save image files
             self.save_images(params_image, c)
 
+    def search_id_assets(self, search_str: str, assets) -> list[CoinSearchData]:
+        """Search for coin in list of all assets
+
+        search_str: str = string to search in assets
+        assets = list of assets from Alcor
+        return value = list with search results
+        """
+        s = search_str.lower()
+        resp_coins = [item for item in assets
+                      if (re.match(s, item['id'].lower()) or
+                          re.match(s, item['name'].lower()) or
+                          re.match(s, item['symbol'].lower()))]
+        coinsearch = self.convert_assets_to_coinsearchdata(resp_coins)
+        return coinsearch
+
+    def convert_assets_to_coinsearchdata(self, resp: list) -> list[CoinSearchData]:
+        """Convert result from site to list of CoinSearchData
+
+        resp = list from the web
+        return value = list of CoinSearchData
+
+        example of resp['result']:
+        [   {				
+                id:	0chain,		
+                symbol:	zcn,		
+                name:	0chain,		
+                platforms:	{		
+                        ethereum:	0xb9ef770b6a5e12e45983c5d80545258aa38f3b78,
+                        polygon-pos:	0x8bb30e0e67b11b978a5040144c410e1ccddcba30
+                }			
+            },				
+        """
+        coinsearch = []
+        for r in resp:
+            coindata = CoinData(siteid=r['id'],
+                                name=r['name'],
+                                symbol=r['symbol'])
+            coinsearch.append(CoinSearchData(coin=coindata))
+        return coinsearch
+
     def search_id_web(self, search_str: str) -> list[CoinSearchData]:
         """Search request to Coingecko
 
@@ -110,10 +151,10 @@ class CoinSearchCoingecko(CoinSearch):
         """
         url = '{}/search?query={}'.format(config.COINGECKO_URL, search_str)
         resp = self.req.get_request_response(url)
-        coinsearch = self.convert_to_coinsearchdata(resp['coins'])
+        coinsearch = self.convert_websearch_to_coinsearchdata(resp['coins'])
         return coinsearch
 
-    def convert_to_coinsearchdata(self, resp: list) -> list[CoinSearchData]:
+    def convert_websearch_to_coinsearchdata(self, resp: list) -> list[CoinSearchData]:
         """Convert result from site to list of CoinSearchData
 
         resp = list from the web
@@ -154,7 +195,7 @@ class CoinSearchCoingecko(CoinSearch):
                             '''.format(self.table_name)
         return coin_search_query
 
-    def search(self, db: Db, coin_search: str):
+    def search(self, db: Db, coin_search: str, assets: list = []):
         """Search coins in own database (if table exists)
 
         Show the results
@@ -172,8 +213,12 @@ class CoinSearchCoingecko(CoinSearch):
         db_result = self.search_id_db(db, coin_search)
         self.print_search_result(db_result, 'Database')
 
-        # Do search on coingecko
-        cs_result = self.search_id_web(coin_search)
+        if len(assets) > 0:
+            # Search through assets
+            cs_result = self.search_id_assets(coin_search, assets)
+        else:
+            # Do search on coingecko
+            cs_result = self.search_id_web(coin_search)
         self.print_search_result(cs_result, 'CoinGecko')
 
         # ask user which row is the correct answer
@@ -231,6 +276,10 @@ def __main__():
     db.check_db()
     db_table_exist = db.check_table(cs.table_name)
 
+    # get all assets from cryptowatch
+    coin_assets = []
+    coin_assets = cs.get_all_assets()
+
     if args.image:
         if db_table_exist:
             cs.download_images(db)
@@ -240,7 +289,7 @@ def __main__():
         while True:
             if coin_search == None:
                 coin_search = input('Search for coin: ')
-            cs.search(db, coin_search)
+            cs.search(db, coin_search, coin_assets)
             coin_search = None
 
 

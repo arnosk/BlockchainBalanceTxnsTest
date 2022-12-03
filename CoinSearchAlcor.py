@@ -59,10 +59,10 @@ class CoinSearchAlcor(CoinSearch):
                              re.match(s, item['quote_token']['symbol']['name'].lower()) or
                              re.search(s, item['quote_token']['str'].lower()))]
             resp_coins.extend(resp_coin)
-        coinsearch = self.convert_to_coinsearchdata(resp_coins)
+        coinsearch = self.convert_assets_to_coinsearchdata(resp_coins)
         return coinsearch
 
-    def convert_to_coinsearchdata(self, resp: list) -> list[CoinSearchData]:
+    def convert_assets_to_coinsearchdata(self, resp: list) -> list[CoinSearchData]:
         """Convert result from site to list of CoinSearchData
 
         resp = list from the web

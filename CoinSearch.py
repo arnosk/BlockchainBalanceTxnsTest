@@ -68,15 +68,6 @@ class CoinSearch(ABC):
         """
         pass
 
-    @abstractmethod
-    def convert_to_coinsearchdata(self, resp: list) -> list[CoinSearchData]:
-        """Convert result from site to list of CoinSearchData
-
-        resp = list from the web
-        return value = list of CoinSearchData
-        """
-        pass
-
     def save_images(self, image_urls: dict, coin_name: str):
         """Save image files for one coin
 

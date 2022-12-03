@@ -57,10 +57,10 @@ class CoinSearchCryptowatch(CoinSearch):
                       if (re.match(s, item['sid'].lower()) or
                           re.match(s, item['name'].lower()) or
                           re.match(s, item['symbol'].lower()))]
-        coinsearch = self.convert_to_coinsearchdata(resp_coins)
+        coinsearch = self.convert_assets_to_coinsearchdata(resp_coins)
         return coinsearch
 
-    def convert_to_coinsearchdata(self, resp: list) -> list[CoinSearchData]:
+    def convert_assets_to_coinsearchdata(self, resp: list) -> list[CoinSearchData]:
         """Convert result from site to list of CoinSearchData
 
         resp = list from the web
