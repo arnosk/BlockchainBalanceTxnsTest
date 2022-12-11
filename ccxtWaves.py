@@ -8,19 +8,25 @@ Collecting prices
 CCXT
 """
 import ccxt
+
 #import ccxt.async_support as ccxt
 import RequestHelper
+
 
 def test_ccxt():
     print(ccxt.exchanges)
     we = ccxt.wavesexchange({
-    #    'apiKey': 'YOUR_PUBLIC_KEY'
-    #    'secret': 'YOUR_PRIVATE_KEY',
-    #    'proxy': 'https://crossorigin.me/'
+        #    'apiKey': 'YOUR_PUBLIC_KEY'
+        #    'secret': 'YOUR_PRIVATE_KEY',
+        #    'proxy': 'https://crossorigin.me/'
     })
 
     markets = we.load_markets()
     print(markets)
+
+    res = we.fetch_ticker('WAVESUSDNLP/USDN')
+    print(res)
+
 
 def test_api():
     # init request helper class
@@ -29,6 +35,7 @@ def test_api():
     get_url = '/v1/platforms'
     resp = req.get_request_response(api_url+get_url)
     print(resp)
+
 
 def __main__():
     """
@@ -42,5 +49,5 @@ def __main__():
     test_api()
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     __main__()
