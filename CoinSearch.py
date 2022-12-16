@@ -215,7 +215,7 @@ class CoinSearch(ABC):
         """
         minimal = 0
         maximum = len(coinsearch) - 1
-        message = 'Select correct coin to store in database, or (N)ew search, or (Q)uit'
+        message = 'Select coin to store in database, or (N)ew search, or (Q)uit'
 
         while True:
             # read a command with arguments from the input
