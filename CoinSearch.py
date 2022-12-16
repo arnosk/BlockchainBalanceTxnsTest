@@ -191,7 +191,7 @@ class CoinSearch(ABC):
                     # safe coin images
                     images_urls = {'thumb': coin.image_thumb,
                                    'large': coin.image_large}
-                    self.save_images(images_urls, coin.coin.name)
+                    self.save_images(images_urls, coin_name)
                 else:
                     print('Error adding %s to database' % (coin_name))
         else:
