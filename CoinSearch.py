@@ -160,16 +160,14 @@ class CoinSearch(ABC):
         else:
             print('Coin not found from', text)
 
-    def insert_coin_check(self, db: Db, user_input, coinsearch: list[CoinSearchData]):
+    def insert_coin_check(self, db: Db, coin: CoinSearchData):
         """Check for existence of selected coin before inserting coin in database
 
         The selected row is inserted into the table, if it doesn't already exists
 
         db = instance of Db
-        user_input = char or integer with row number
-        coinsearch = result from search
+        coin = search data with retrieved coin info from web
         """
-        coin = coinsearch[user_input]
         coin_id = coin.coin.siteid
         coin_name = coin.coin.name
 
@@ -238,7 +236,7 @@ class CoinSearch(ABC):
                         print(f'Unknown command {cmd.command!r}.')
                     else:
                         if (value >= minimal and value <= maximum):
-                            self.insert_coin_check(db, value, coinsearch)
+                            self.insert_coin_check(db, coinsearch[value])
                             break
                         else:
                             print('No correct row number! Try again.')
