@@ -160,42 +160,49 @@ class CoinSearch(ABC):
         else:
             print('Coin not found from', text)
 
-    def input_number(self, message: str, minimal: int = 1, maximum: int = 1):
+    def insert_coin_check(self, db: Db, user_input, coinsearch: list[CoinSearchData]):
+        """Check for existence of selected coin before inserting coin in database
+
+        The selected row is inserted into the table, if it doesn't already exists
+
+        db = instance of Db
+        user_input = char or integer with row number
+        coinsearch = result from search
+        """
+        coin = coinsearch[user_input]
+        coin_id = coin.coin.siteid
+        coin_name = coin.coin.name
+
+        # check if coin name, symbol is already in our database
+        if db.has_connection():
+            # if table doesn't exist, create table coins
+            if not db.check_table(self.table_name):
+                DbHelper.create_table(db, self.table_name)
+
+            db_result = db.query('SELECT * FROM {} WHERE siteid=?'.format(self.table_name),
+                                 (coin_id,))
+            if len(db_result):
+                print('Database already has a row with the coin %s' %
+                      (coin_name))
+            else:
+                # add new row to table coins
+                insert_result = self.insert_coin(db, coin)
+                if insert_result > 0:
+                    print('%s added to the database' % (coin_name))
+
+                    # safe coin images
+                    images_urls = {'thumb': coin.image_thumb,
+                                   'large': coin.image_large}
+                    self.save_images(images_urls, coin.coin.name)
+                else:
+                    print('Error adding %s to database' % (coin_name))
+        else:
+            print('No database connection')
+
+    def input_coin_row(self, db: Db, coinsearch: list[CoinSearchData]):
         """UI for asking row number
 
-        message = string for printing on screen to ask for user input
-        minimal = minimal allowed integer
-        maximum = maximum allowed integer
-        retrun value = selected row number or 
-                       'n' for new search or 
-                       'q' for quit program
-        """
-        while True:
-            # read a command with arguments from the input
-            command, *arguments = shlex.split(input(f'{message} $ '))
-            cmd = Command(command, arguments)
-
-            match cmd:
-                case Command(command='new' | 'n'):
-                    return 'n'
-                case Command(command='quit' | 'q' | 'exit' | 'e', arguments=['--force' | '-f', *rest]):
-                    print("Sending SIGTERM to all processes and quitting the program.")
-                    return 'q'
-                case Command(command='quit' | 'q' | 'exit' | 'e'):
-                    return 'q'
-                case _:
-                    try:
-                        value = int(cmd.command)
-                    except ValueError:
-                        print(f'Unknown command {command!r}.')
-                    else:
-                        if (value >= minimal and value <= maximum):
-                            return value
-                        else:
-                            print('No correct row number! Try again.')
-
-    def handle_user_input(self, db: Db, user_input, coinsearch: list[CoinSearchData]):
-        """Handle user input after selecting coin
+        Handle user input after selecting coin
 
         New search, skips the function
         Quit exits the program
@@ -204,38 +211,34 @@ class CoinSearch(ABC):
         db = instance of Db
         user_input = char or integer with row number
         coinsearch = result from search
+
         """
-        if user_input == 'n':
-            print('New search')
-        elif user_input == 'q':
-            sys.exit('Exiting')
-        else:
-            coin = coinsearch[user_input]
-            coin_id = coin.coin.siteid
-            coin_name = coin.coin.name
+        minimal = 0
+        maximum = len(coinsearch) - 1
+        message = 'Select correct coin to store in database, or (N)ew search, or (Q)uit'
 
-            # check if coin name, symbol is already in our database
-            if db.has_connection():
-                # if table doesn't exist, create table coins
-                if not db.check_table(self.table_name):
-                    DbHelper.create_table(db, self.table_name)
+        while True:
+            # read a command with arguments from the input
+            command, *arguments = shlex.split(input(f'{message} $ '))
+            cmd = Command(command, arguments)
 
-                db_result = db.query('SELECT * FROM {} WHERE siteid=?'.format(self.table_name),
-                                     (coin_id,))
-                if len(db_result):
-                    print('Database already has a row with the coin %s' %
-                          (coin_name))
-                else:
-                    # add new row to table coins
-                    insert_result = self.insert_coin(db, coin)
-                    if insert_result > 0:
-                        print('%s added to the database' % (coin_name))
-
-                        # safe coin images
-                        images_urls = {'thumb': coin.image_thumb,
-                                       'large': coin.image_large}
-                        self.save_images(images_urls, coin.coin.name)
+            match cmd:
+                case Command(command='new' | 'n'):
+                    print('New search')
+                    break
+                case Command(command='quit' | 'q' | 'exit' | 'e', arguments=['--force' | '-f', *rest]):
+                    print("Sending SIGTERM to all processes and quitting the program.")
+                    sys.exit('Exiting')
+                case Command(command='quit' | 'q' | 'exit' | 'e'):
+                    sys.exit('Exiting')
+                case _:
+                    try:
+                        value = int(cmd.command)
+                    except ValueError:
+                        print(f'Unknown command {command!r}.')
                     else:
-                        print('Error adding %s to database' % (coin_name))
-            else:
-                print('No database connection')
+                        if (value >= minimal and value <= maximum):
+                            self.insert_coin_check(db, value, coinsearch)
+                            break
+                        else:
+                            print('No correct row number! Try again.')

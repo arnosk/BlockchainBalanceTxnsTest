@@ -131,12 +131,7 @@ class CoinSearchAlcor(CoinSearch):
         self.print_search_result(cs_result, 'Alcor')
 
         # ask user which row is the correct answer
-        user_input = self.input_number('Select correct coin to store in database, or (N)ew search, or (Q)uit: ',
-                                       0, len(cs_result)-1)
-
-        # if coin is selected, add to database when new
-        # go back to search question / exit
-        self.handle_user_input(db, user_input, cs_result)
+        self.input_coin_row(db, cs_result)
 
     def get_all_assets(self, chains: list) -> dict:
         '''Retrieve all assets from alcor api
