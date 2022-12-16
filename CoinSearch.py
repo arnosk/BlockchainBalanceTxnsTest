@@ -7,9 +7,11 @@ Base Class CoinSearch
 
 """
 import os
+import shlex
 import sys
 from abc import ABC, abstractmethod
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
+from typing import List
 
 import cfscrape
 import pandas as pd
@@ -18,6 +20,18 @@ import DbHelper
 from CoinData import CoinData, CoinSearchData
 from Db import Db
 from RequestHelper import RequestHelper
+
+
+@dataclass
+class Command:
+    """Class that represents a command."""
+
+    command: str
+    arguments: List[str]
+
+    def __post_init__(self):
+        self.command = self.command.lower()
+        self.arguments = [x.lower() for x in self.arguments]
 
 
 class CoinSearch(ABC):
@@ -157,23 +171,28 @@ class CoinSearch(ABC):
                        'q' for quit program
         """
         while True:
-            user_input = input(message)
-            user_input = user_input.lower()
-            if (user_input == 'n' or user_input == 'new'):
-                user_input = 'n'
-            elif (user_input == 'q' or user_input == 'quit'):
-                user_input = 'q'
-            else:
-                try:
-                    user_input = int(user_input)
-                except ValueError:
-                    print('No correct input! Try again.')
-                    continue
-                else:
-                    if (user_input < minimal or user_input > maximum):
-                        print('No correct row number! Try again.')
-                        continue
-            return user_input
+            # read a command with arguments from the input
+            command, *arguments = shlex.split(input(f'{message} $ '))
+            cmd = Command(command, arguments)
+
+            match cmd:
+                case Command(command='new' | 'n'):
+                    return 'n'
+                case Command(command='quit' | 'q' | 'exit' | 'e', arguments=['--force' | '-f', *rest]):
+                    print("Sending SIGTERM to all processes and quitting the program.")
+                    return 'q'
+                case Command(command='quit' | 'q' | 'exit' | 'e'):
+                    return 'q'
+                case _:
+                    try:
+                        value = int(cmd.command)
+                    except ValueError:
+                        print(f'Unknown command {command!r}.')
+                    else:
+                        if (value >= minimal and value <= maximum):
+                            return value
+                        else:
+                            print('No correct row number! Try again.')
 
     def handle_user_input(self, db: Db, user_input, coinsearch: list[CoinSearchData]):
         """Handle user input after selecting coin
