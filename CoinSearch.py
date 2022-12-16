@@ -235,7 +235,7 @@ class CoinSearch(ABC):
                     try:
                         value = int(cmd.command)
                     except ValueError:
-                        print(f'Unknown command {command!r}.')
+                        print(f'Unknown command {cmd.command!r}.')
                     else:
                         if (value >= minimal and value <= maximum):
                             self.insert_coin_check(db, value, coinsearch)
